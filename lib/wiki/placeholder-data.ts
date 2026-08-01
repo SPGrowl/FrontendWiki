@@ -1,7 +1,12 @@
-export interface SidebarNavItem {
-  title: string;
-  herf: string;
+export interface SidebarNavLink {
   label: string;
+  href: string;
+  external?: boolean;
+}
+
+export interface SidebarNavGroup {
+  title: string;
+  items: SidebarNavLink[];
 }
 
 export interface WikiCategory {
@@ -10,20 +15,53 @@ export interface WikiCategory {
   label: string;
 }
 
-export const sidebarNavItems: SidebarNavItem[] = [
-  { title: "参与贡献", herf: "/wiki/contribute", label: "编辑指南" },
-  { title: "实用工具", herf: "/wiki/community", label: "社区门户" },
-  { title: "常用文档", herf: "/wiki/games", label: "游戏概览" },
-  { title: "版本", herf: "/wiki/versions", label: "Java 版 26.2" },
-  { title: "常用页面", herf: "/wiki/blocks", label: "方块" },
-  { title: "工具", herf: "/wiki/tools", label: "工具列表" },
+export const sidebarNavGroups: SidebarNavGroup[] = [
+  {
+    title: "参与贡献",
+    items: [
+      { label: "编辑指南", href: "/wiki/contribute" },
+      { label: "贡献规范", href: "/wiki/guidelines" },
+      { label: "待完善词条", href: "/wiki/stubs" },
+    ],
+  },
+  {
+    title: "实用工具",
+    items: [
+      { label: "调色盘", href: "/tools/color-picker" },
+      { label: "JS 运行器", href: "/tools/js-runner" },
+      { label: "正则测试", href: "/tools/regex" },
+      { label: "JSON 格式化", href: "/tools/json-formatter" },
+      { label: "全部工具", href: "/tools" },
+    ],
+  },
+  {
+    title: "常用文档",
+    items: [
+      { label: "JavaScript", href: "/entry/javascript" },
+      { label: "TypeScript", href: "/entry/typescript" },
+      { label: "HTML", href: "/entry/html" },
+      { label: "CSS", href: "/entry/css" },
+      { label: "React", href: "/entry/react" },
+    ],
+  },
+  {
+    title: "外站链接",
+    items: [
+      { label: "MDN Web Docs", href: "https://developer.mozilla.org", external: true },
+      { label: "React", href: "https://react.dev", external: true },
+      { label: "Vue.js", href: "https://vuejs.org", external: true },
+      { label: "TypeScript", href: "https://www.typescriptlang.org", external: true },
+      { label: "Node.js", href: "https://nodejs.org", external: true },
+      { label: "Can I Use", href: "https://caniuse.com", external: true },
+      { label: "npm", href: "https://www.npmjs.com", external: true },
+    ],
+  },
 ];
 
 export const wikiCategories: WikiCategory[] = [
   { content: "首页", href: "/", label: "Home" },
-  { content: "原生", href: "/native", label: "Native" },
-  { content: "框架", href: "/framework", label: "Framework" },
-  { content: "工具链", href: "/tool", label: "tool" },
-  { content: "JS全栈", href: "/fullstack", label: "FullStack" },
-  { content: "项目", href: "/project", label: "Project" },
+  { content: "原生", href: "/navigation/native", label: "Native" },
+  { content: "框架", href: "/navigation/framework", label: "Framework" },
+  { content: "工具链", href: "/navigation/toolchain", label: "Toolchain" },
+  { content: "JS全栈", href: "/navigation/fullstack", label: "FullStack" },
 ];

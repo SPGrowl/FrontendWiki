@@ -1,18 +1,12 @@
-// wiki-main.tsx — Server
 import { MetaCard } from "../card/MetaCard";
-export  function MainContainer({ children }: { children: React.ReactNode }) {
-    return (
-      <>
-      <main className="flex-1 flex justify-between min-w-0 gap-2 ">
-  <div className="min-w-0 flex-2">{children}</div>
-  <MetaCard />
-      </main>
-        </>
-    );
-  }
-  export default function Main({ children }: { children: React.ReactNode }) {
-    return (
-        <main >
-        </main>
-    );
+
+export function MainContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-2 md:flex-row">
+      <div className="min-w-0 flex-1">{children}</div>
+      <aside className="w-full shrink-0 md:w-80">
+        <MetaCard />
+      </aside>
+    </div>
+  );
 }
