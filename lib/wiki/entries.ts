@@ -1,7 +1,4 @@
-import {
-  getBlogEntryPageData,
-  getCommonEntryPageData,
-} from "@/lib/db/entries";
+import { getEntryPageDataBySegments } from "@/lib/db/entries";
 
 export interface WikiEntryData {
   id: string;
@@ -9,19 +6,11 @@ export interface WikiEntryData {
   content: string;
 }
 
-/** @deprecated 优先使用 getCommonEntryPageData / getBlogEntryPageData */
+/** @deprecated 优先使用 getEntryPageDataBySegments */
 export async function getEntryById(id: string): Promise<WikiEntryData | null> {
-  const common = await getCommonEntryPageData([id]);
-  if (common) {
-    return { id: common.id, title: common.title, content: common.content };
-  }
-
-  const blog = await getBlogEntryPageData(id);
-  if (blog) {
-    return { id: blog.id, title: blog.title, content: blog.content };
-  }
-
-  return null;
+  const entry = await getEntryPageDataBySegments([id]);
+  if (!entry) return null;
+  return { id: entry.id, title: entry.title, content: entry.content };
 }
 
 export function getAllEntryIds(): string[] {

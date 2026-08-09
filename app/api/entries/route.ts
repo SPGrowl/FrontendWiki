@@ -60,22 +60,14 @@ export async function POST(request: Request) {
     );
   }
 
-  if (
-    payload?.type !== undefined &&
-    typeInput === undefined
-  ) {
+  if (typeInput !== "common" && typeInput !== "blog") {
     return NextResponse.json<EntryErrorResponse>(
       { error: "type 必须是 common 或 blog" },
       { status: 400 }
     );
   }
 
-  const type =
-    typeInput === "common" || typeInput === "blog"
-      ? typeInput
-      : parentId
-        ? "common"
-        : "blog";
+  const type = typeInput;
 
   if (type === "common" && parentId) {
     const parent = await findParentEntryForCreate(parentId);

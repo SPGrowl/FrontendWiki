@@ -10,23 +10,44 @@ import { ParentEntryPicker } from "@/components/wiki/editor/parent-entry-picker"
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { createDraft, updateDraft } from "@/lib/api/drafts";
 import { createEntry } from "@/lib/api/entries";
-import { buildCreatePreview } from "@/lib/wiki/entry-path";
+import { BLOG_SEGMENT, buildCreatePreview } from "@/lib/wiki/entry-path";
 import {
   canUseNameAsSlug,
   resolveEntrySlug,
   validateSlug,
 } from "@/lib/wiki/entry-slug";
-import type { EntryPublishTarget, EntrySearchItem } from "@/type/entry-api";
+import type { EntryCreateType, EntrySearchItem } from "@/type/entry-api";
 
-export function EntryEditor() {
+interface EntryEditorProps {
+  draftId?: string;
+  initialTitle?: string;
+  initialContent?: string;
+  initialMessage?: string;
+  initialCustomSlug?: string;
+  initialEntryType?: EntryCreateType;
+  initialParent?: EntrySearchItem | null;
+}
+
+export function EntryEditor({
+  draftId: initialDraftId,
+  initialTitle = "",
+  initialContent = "",
+  initialMessage = "",
+  initialCustomSlug = "",
+  initialEntryType = "common",
+  initialParent = null,
+}: EntryEditorProps) {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [customSlug, setCustomSlug] = useState("");
-  const [content, setContent] = useState("");
-  const [publishTarget, setPublishTarget] =
-    useState<EntryPublishTarget>("root");
-  const [parent, setParent] = useState<EntrySearchItem | null>(null);
+  const [title, setTitle] = useState(initialTitle);
+  const [customSlug, setCustomSlug] = useState(initialCustomSlug);
+  const [content, setContent] = useState(initialContent);
+  const [message, setMessage] = useState(initialMessage);
+  const [entryType, setEntryType] = useState<EntryCreateType>(initialEntryType);
+  const [parent, setParent] = useState<EntrySearchItem | null>(initialParent);
+  const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<"save" | "publish" | null>(null);
@@ -34,6 +55,7 @@ export function EntryEditor() {
   const trimmedTitle = title.trim();
   const trimmedContent = content.trim();
   const trimmedCustomSlug = customSlug.trim();
+  const trimmedMessage = message.trim();
 
   const nameSlugCheck = useMemo(
     () => (trimmedTitle ? canUseNameAsSlug(trimmedTitle) : null),
@@ -45,16 +67,16 @@ export function EntryEditor() {
   );
 
   useEffect(() => {
-    if (publishTarget !== "child") {
+    if (entryType === "blog") {
       setParent(null);
     }
-  }, [publishTarget]);
+  }, [entryType]);
 
   useEffect(() => {
-    if (!needsCustomSlug) {
+    if (!needsCustomSlug && !initialCustomSlug) {
       setCustomSlug("");
     }
-  }, [needsCustomSlug]);
+  }, [needsCustomSlug, initialCustomSlug]);
 
   const effectiveSlug = useMemo(() => {
     if (!trimmedTitle) return null;
@@ -76,22 +98,23 @@ export function EntryEditor() {
   const pathPreview = useMemo(
     () =>
       buildCreatePreview(
-        publishTarget,
+        entryType,
         parent,
         trimmedTitle || "未命名词条",
         effectiveSlug ?? undefined
       ),
-    [publishTarget, parent, trimmedTitle, effectiveSlug]
+    [entryType, parent, trimmedTitle, effectiveSlug]
   );
 
   const canSubmit =
     trimmedTitle.length > 0 &&
     trimmedContent.length > 0 &&
     effectiveSlug !== null &&
-    (!needsCustomSlug || slugValidation?.valid === true) &&
-    (publishTarget !== "child" || parent !== null);
+    (!needsCustomSlug || slugValidation?.valid === true);
 
-  function validate() {
+  const canSaveDraft = trimmedTitle.length > 0;
+
+  function validatePublish() {
     if (!trimmedTitle) {
       setError("请填写词条标题");
       return false;
@@ -108,10 +131,6 @@ export function EntryEditor() {
       setError(slugValidation.reason ?? "URL 别名无效");
       return false;
     }
-    if (publishTarget === "child" && !parent) {
-      setError("请选择父词条");
-      return false;
-    }
     const slugResult = resolveEntrySlug(
       trimmedTitle,
       needsCustomSlug ? trimmedCustomSlug : null
@@ -120,7 +139,16 @@ export function EntryEditor() {
       setError(slugResult.error);
       return false;
     }
-    setError(null);
+    clearMessages();
+    return true;
+  }
+
+  function validateDraft() {
+    if (!trimmedTitle) {
+      setError("请填写词条标题");
+      return false;
+    }
+    clearMessages();
     return true;
   }
 
@@ -133,14 +161,43 @@ export function EntryEditor() {
     router.push("/wiki/contribute");
   }
 
-  function handleSave() {
-    if (!validate()) return;
+  function buildDraftPayload() {
+    return {
+      draftType: "new" as const,
+      name: trimmedTitle,
+      content,
+      message: trimmedMessage,
+      entryType,
+      parentId: entryType === "common" ? parent?.id ?? null : null,
+      slug: effectiveSlug,
+    };
+  }
+
+  async function handleSave() {
+    if (!validateDraft()) return;
+
+    setPending("save");
     clearMessages();
-    setNotice("草稿保存尚未开放");
+
+    try {
+      if (draftId) {
+        await updateDraft(draftId, buildDraftPayload());
+      } else {
+        const result = await createDraft(buildDraftPayload());
+        setDraftId(result.draft.id);
+      }
+
+      setNotice("草稿已保存");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存草稿失败");
+    } finally {
+      setPending(null);
+    }
   }
 
   async function handlePublish() {
-    if (!validate()) return;
+    if (!validatePublish()) return;
 
     setPending("publish");
     clearMessages();
@@ -149,9 +206,10 @@ export function EntryEditor() {
       const result = await createEntry({
         name: trimmedTitle,
         content: trimmedContent,
-        type: publishTarget === "blog" ? "blog" : "common",
-        parentId: publishTarget === "child" ? parent?.id ?? null : null,
+        type: entryType,
+        parentId: entryType === "common" ? parent?.id ?? null : null,
         slug: needsCustomSlug ? trimmedCustomSlug : undefined,
+        message: trimmedMessage || undefined,
       });
       router.push(result.href);
       router.refresh();
@@ -228,14 +286,23 @@ export function EntryEditor() {
           ) : null}
 
           <EntryPublishTargetPicker
-            value={publishTarget}
-            onChange={setPublishTarget}
+            value={entryType}
+            onChange={setEntryType}
             disabled={pending !== null}
           />
 
-          {publishTarget === "child" ? (
+          {entryType === "common" ? (
             <ParentEntryPicker value={parent} onChange={setParent} />
-          ) : null}
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium">发布位置</span>
+              <p className="rounded-none border border-border bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
+                固定前缀{" "}
+                <code className="text-foreground">/entry/{BLOG_SEGMENT}/</code>
+                ，别名由标题或 URL 别名决定
+              </p>
+            </div>
+          )}
 
           <EntryPathPreview
             breadcrumbs={pathPreview.breadcrumbs}
@@ -248,6 +315,20 @@ export function EntryEditor() {
           onChange={setContent}
           disabled={pending !== null}
         />
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="entry-message" className="text-xs font-medium">
+            说明
+          </label>
+          <Textarea
+            id="entry-message"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder="草稿说明；发布时将写入版本历史"
+            rows={2}
+            disabled={pending !== null}
+          />
+        </div>
 
         {error ? (
           <p className="shrink-0 text-xs text-destructive">{error}</p>
@@ -269,10 +350,10 @@ export function EntryEditor() {
             <Button
               type="button"
               variant="secondary"
-              disabled={!canSubmit || pending !== null}
+              disabled={!canSaveDraft || pending !== null}
               onClick={handleSave}
             >
-              保存
+              {pending === "save" ? "保存中…" : "存草稿"}
             </Button>
             <Button
               type="button"

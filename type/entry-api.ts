@@ -14,15 +14,19 @@ export interface EntrySearchResponse {
 
 import type { EntryType } from "@/type/entry";
 
-export type EntryPublishTarget = "root" | "child" | "blog";
+/** 创建时选定的词条类型（创建后不可变） */
+export type EntryCreateType = "common" | "blog";
+
+/** @deprecated 使用 EntryCreateType；root/child 已合并进父词条选择器 */
+export type EntryPublishTarget = EntryCreateType;
 
 export interface CreateEntryRequest {
   name: string;
   content: string;
   parentId?: string | null;
   slug?: string | null;
-  /** common：根级或子词条；blog：博客。默认无 parentId 时为 blog（兼容旧客户端） */
-  type?: EntryType;
+  /** common：百科词条（根级或子级）；blog：博客。创建后不可变 */
+  type: EntryType;
   message?: string;
 }
 

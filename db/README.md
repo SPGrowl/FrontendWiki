@@ -52,9 +52,18 @@ npm run db:check
 | 表 | 说明 |
 |----|------|
 | `users` | 用户 |
-| `entries` | 词条元数据 |
+| `entries` | 词条元数据（`type`: common / blog；blog 路径 `/entry/blog/{slug}`） |
 | `entry_versions` | 版本快照（append-only） |
 | `entry_slug_redirects` | slug 重定向 |
+| `entry_drafts` | 用户私有草稿（每词条可多条） |
+
+### 已有库迁移（blog slug 命名空间）
+
+若库是旧版 `entries_root_slug_unique`（common/blog 共用根 slug），执行：
+
+```bash
+psql -U postgres -d frontend_wiki -f db/migrate-blog-slug-namespace.sql
+```
 
 ## 代码中使用
 

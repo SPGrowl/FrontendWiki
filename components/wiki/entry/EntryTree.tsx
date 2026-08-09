@@ -88,7 +88,7 @@ export function EntryTree({ currentEntryId, relatedEntries }: EntryTreeProps) {
   if (!hasContent) return null;
 
   return (
-    <WikiCard padding="md" className="sticky top-20">
+    <WikiCard padding="md">
       <div className="space-y-4">
         {parentEntry && (
           <section>

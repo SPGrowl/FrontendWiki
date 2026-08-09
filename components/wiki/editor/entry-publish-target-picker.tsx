@@ -1,45 +1,41 @@
 "use client";
 
-import type { EntryPublishTarget } from "@/type/entry-api";
+import type { EntryCreateType } from "@/type/entry-api";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: Array<{
-  value: EntryPublishTarget;
+  value: EntryCreateType;
   label: string;
   description: string;
 }> = [
   {
-    value: "root",
-    label: "根级词条",
-    description: "与 JavaScript 同级，如 /entry/css",
-  },
-  {
-    value: "child",
-    label: "子词条",
-    description: "挂在已有词条下，如 /entry/javascript/es6",
+    value: "common",
+    label: "百科词条",
+    description: "挂在词条树下；可选顶级或指定父词条",
   },
   {
     value: "blog",
     label: "博客",
-    description: "发布到博客模块，路径为 /entry/blog/词条ID",
+    description: "固定路径 /entry/blog/{别名}，创建后类型不可改",
   },
 ];
 
-interface EntryPublishTargetPickerProps {
-  value: EntryPublishTarget;
-  onChange: (value: EntryPublishTarget) => void;
+interface EntryTypePickerProps {
+  value: EntryCreateType;
+  onChange: (value: EntryCreateType) => void;
   disabled?: boolean;
 }
 
+/** 创建时选定词条类型（创建后不可变） */
 export function EntryPublishTargetPicker({
   value,
   onChange,
   disabled,
-}: EntryPublishTargetPickerProps) {
+}: EntryTypePickerProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium">发布位置</span>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <span className="text-xs font-medium">词条类型</span>
+      <div className="grid gap-2 sm:grid-cols-2">
         {OPTIONS.map((option) => {
           const selected = value === option.value;
           return (

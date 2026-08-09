@@ -5,7 +5,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { bracketMatching, foldGutter, indentOnInput } from "@codemirror/language";
 import { lintKeymap } from "@codemirror/lint";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
-import { EditorState } from "@codemirror/state";
+import { EditorState, type Extension } from "@codemirror/state";
 import {
   crosshairCursor,
   drawSelection,
@@ -16,13 +16,14 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
+  EditorView,
 } from "@codemirror/view";
 import {
   createWikiEditorTheme,
   wikiMarkdownSyntaxHighlighting,
 } from "./wiki-markdown-theme";
 
-export function createMarkdownEditorExtensions() {
+export function createMarkdownEditorExtensions(): Extension[] {
   return [
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -52,4 +53,34 @@ export function createMarkdownEditorExtensions() {
       indentWithTab,
     ]),
   ];
+}
+
+export function createReadOnlyMarkdownEditorExtensions(): Extension[] {
+  return [
+    ...createMarkdownEditorExtensions(),
+    EditorView.lineWrapping,
+    EditorView.editable.of(false),
+    EditorState.readOnly.of(true),
+  ];
+}
+
+export function createEditableMarkdownEditorExtensions(options?: {
+  onDocChange?: (value: string) => void;
+}): Extension[] {
+  const extensions: Extension[] = [
+    ...createMarkdownEditorExtensions(),
+    EditorView.lineWrapping,
+  ];
+
+  if (options?.onDocChange) {
+    extensions.push(
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          options.onDocChange?.(update.state.doc.toString());
+        }
+      })
+    );
+  }
+
+  return extensions;
 }

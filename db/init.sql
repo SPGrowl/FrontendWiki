@@ -55,15 +55,35 @@ CREATE TABLE IF NOT EXISTS entries (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 根级词条：parent_id IS NULL 时 slug 唯一
-CREATE UNIQUE INDEX IF NOT EXISTS entries_root_slug_unique
-  ON entries (slug)
-  WHERE parent_id IS NULL;
+-- 旧索引：根级 slug 曾跨 common/blog 共用，拆分后删除
+DROP INDEX IF EXISTS entries_root_slug_unique;
 
--- 子级词条：同一 parent 下 slug 唯一
+-- common 根级：parent_id IS NULL AND type = common 时 slug 唯一
+CREATE UNIQUE INDEX IF NOT EXISTS entries_common_root_slug_unique
+  ON entries (slug)
+  WHERE parent_id IS NULL AND type = 'common';
+
+-- blog 一级：parent_id IS NULL AND type = blog 时 slug 唯一（与 common 根可同名）
+CREATE UNIQUE INDEX IF NOT EXISTS entries_blog_slug_unique
+  ON entries (slug)
+  WHERE parent_id IS NULL AND type = 'blog';
+
+-- 子级词条：同一 parent 下 slug 唯一（仅 common）
 CREATE UNIQUE INDEX IF NOT EXISTS entries_child_slug_unique
   ON entries (parent_id, slug)
-  WHERE parent_id IS NOT NULL;
+  WHERE parent_id IS NOT NULL AND type = 'common';
+
+-- blog 禁止挂父级
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'entries_blog_no_parent'
+  ) THEN
+    ALTER TABLE entries
+      ADD CONSTRAINT entries_blog_no_parent
+      CHECK (type <> 'blog' OR parent_id IS NULL);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_entries_parent ON entries (parent_id);
 CREATE INDEX IF NOT EXISTS idx_entries_creator ON entries (creator_id);
@@ -117,5 +137,36 @@ CREATE TABLE IF NOT EXISTS entry_slug_redirects (
 
 CREATE INDEX IF NOT EXISTS idx_entry_slug_redirects_entry
   ON entry_slug_redirects (entry_id);
+
+-- ---------------------------------------------------------------------------
+-- entry_drafts（用户私有草稿，每词条可有多条）
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS entry_drafts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  entry_id    UUID REFERENCES entries (id) ON DELETE CASCADE,
+  draft_type  TEXT NOT NULL CHECK (draft_type IN ('new', 'edit')),
+  name        TEXT NOT NULL,
+  content     TEXT NOT NULL DEFAULT '',
+  message     TEXT NOT NULL DEFAULT '',
+  entry_type  TEXT CHECK (entry_type IN ('common', 'blog')),
+  parent_id   UUID REFERENCES entries (id) ON DELETE SET NULL,
+  slug        TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT entry_drafts_new_requires_meta CHECK (
+    draft_type <> 'new' OR entry_type IS NOT NULL
+  ),
+  CONSTRAINT entry_drafts_edit_requires_entry CHECK (
+    draft_type <> 'edit' OR entry_id IS NOT NULL
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_entry_drafts_user_updated
+  ON entry_drafts (user_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_entry_drafts_user_entry
+  ON entry_drafts (user_id, entry_id, updated_at DESC)
+  WHERE entry_id IS NOT NULL;
 
 COMMIT;

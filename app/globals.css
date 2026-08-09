@@ -264,15 +264,13 @@
     @apply border border-border px-3 py-1.5;
   }
 
-  .wiki-prose :where(pre) {
-    @apply my-3 overflow-x-auto rounded-md bg-wiki-code-bg p-3 text-[0.8125rem];
-  }
-
   .wiki-prose :where(code) {
     @apply rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem];
   }
 
-  .wiki-prose :where(pre code) {
+  /* 块级代码由 MarkdownCodeBlock 接管，避免与工具条双重边距 */
+  .wiki-prose :where(.wiki-code-block) pre,
+  .wiki-prose :where(.wiki-code-block) code {
     @apply bg-transparent p-0;
   }
 
@@ -286,5 +284,29 @@
 
   .wiki-markdown-editor--adaptive .cm-editor {
     min-height: 100%;
+  }
+
+  .wiki-markdown-merge-editor .cm-mergeView {
+    min-height: 24rem;
+    max-height: 125vh;
+    overflow: auto;
+    border-radius: 0;
+  }
+
+  .wiki-markdown-merge-editor .cm-mergeViewEditors {
+    min-height: inherit;
+  }
+
+  .wiki-markdown-merge-editor .cm-mergeViewEditor {
+    min-height: inherit;
+  }
+
+  .wiki-markdown-merge-editor .cm-editor {
+    height: 100%;
+    min-height: 24rem;
+  }
+
+  .wiki-markdown-merge-editor .cm-scroller {
+    overflow: auto;
   }
 }

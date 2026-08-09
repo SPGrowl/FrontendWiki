@@ -16,7 +16,11 @@ export default function JsRunnerPage() {
       <p className="mt-2 text-muted-foreground">
         运行器面板已打开。若未看到浮层，请点击侧栏「JS 运行器」或使用下方按钮。
       </p>
-      <button type="button" onClick={openRunner} className="wiki-btn-primary mt-4">
+      <button
+        type="button"
+        onClick={() => openRunner()}
+        className="wiki-btn-primary mt-4"
+      >
         打开运行器
       </button>
     </div>

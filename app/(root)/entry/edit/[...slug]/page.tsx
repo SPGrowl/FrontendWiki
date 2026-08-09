@@ -3,33 +3,27 @@ import { notFound, redirect } from "next/navigation";
 import { EntryEditEditor } from "@/components/wiki/editor/entry-edit-editor";
 import { canEditEntryMetadata } from "@/lib/auth/entry-permissions";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { findDraftById } from "@/lib/db/drafts";
 import {
-  getBlogEntryPageData,
-  getCommonEntryPageData,
+  findEntrySearchItem,
   getEntryEditPageData,
+  getEntryPageDataBySegments,
 } from "@/lib/db/entries";
-import { BLOG_SEGMENT } from "@/lib/wiki/entry-path";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
+  searchParams: Promise<{ draft?: string }>;
 };
-
-async function loadEntryForEdit(slug: string[]) {
-  if (slug.length >= 2 && slug[0] === BLOG_SEGMENT) {
-    return getBlogEntryPageData(slug[1]);
-  }
-
-  return getCommonEntryPageData(slug);
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const entry = await loadEntryForEdit(slug);
+  const entry = await getEntryPageDataBySegments(slug);
   return { title: entry ? `编辑：${entry.title}` : "编辑词条" };
 }
 
-export default async function EditEntryPage({ params }: Props) {
+export default async function EditEntryPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { draft: draftId } = await searchParams;
   const editPath = `/entry/edit/${slug.map(encodeURIComponent).join("/")}`;
 
   const user = await getCurrentUser();
@@ -37,7 +31,7 @@ export default async function EditEntryPage({ params }: Props) {
     redirect(`/auth/login?next=${encodeURIComponent(editPath)}`);
   }
 
-  const entry = await loadEntryForEdit(slug);
+  const entry = await getEntryPageDataBySegments(slug);
   if (!entry) notFound();
 
   const editData = await getEntryEditPageData(entry.id);
@@ -45,16 +39,37 @@ export default async function EditEntryPage({ params }: Props) {
 
   const canEditMetadata = canEditEntryMetadata(user, editData.creatorId);
 
+  let loadedDraft = draftId
+    ? await findDraftById(draftId, user.id)
+    : null;
+
+  if (
+    loadedDraft &&
+    (loadedDraft.draftType !== "edit" ||
+      loadedDraft.entryId !== editData.id)
+  ) {
+    loadedDraft = null;
+  }
+
+  let initialParent = editData.parent;
+  if (loadedDraft?.parentId && canEditMetadata && editData.type === "common") {
+    initialParent =
+      (await findEntrySearchItem(loadedDraft.parentId)) ?? editData.parent;
+  }
+
   return (
     <EntryEditEditor
       entryId={editData.id}
       entryType={editData.type}
-      initialName={editData.name}
-      initialSlug={editData.slug}
-      initialContent={editData.content}
-      initialParent={editData.parent}
+      publishedContent={editData.content}
+      initialName={loadedDraft?.name ?? editData.name}
+      initialSlug={loadedDraft?.slug ?? editData.slug}
+      initialContent={loadedDraft?.content ?? editData.content}
+      initialMessage={loadedDraft?.message ?? ""}
+      initialParent={initialParent}
       readHref={entry.path}
       canEditMetadata={canEditMetadata}
+      draftId={loadedDraft?.id}
     />
   );
 }

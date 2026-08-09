@@ -100,6 +100,7 @@ export interface EntryPageData {
   path: string;
   breadcrumbs: BreadcrumbItem[];
   relatedEntries: RelatedEntryies;
+  contributors: Contributor[];
 }
 
 /**
@@ -115,4 +116,36 @@ export interface EntryView extends Entry {
   contributors: Contributor[];
   relatedEntries: RelatedEntryies;
   breadcrumbs: BreadcrumbItem[];
+}
+
+/** 版本历史列表项 */
+export interface EntryVersionListItem {
+  id: string;
+  versionNo: number;
+  title: string;
+  message: string;
+  contributorId: string;
+  contributorName: string;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
+/** 版本历史页读模型 */
+export interface EntryHistoryPageData {
+  entryId: string;
+  entryName: string;
+  readPath: string;
+  breadcrumbs: BreadcrumbItem[];
+  relatedEntries: RelatedEntryies;
+  versions: EntryVersionListItem[];
+}
+
+/** 指定版本阅读页读模型 */
+export interface EntryVersionPageData extends EntryPageData {
+  versionNo: number;
+  versionMessage: string;
+  contributorId: string;
+  contributorName: string;
+  versionCreatedAt: string;
+  isCurrent: boolean;
 }

@@ -22,14 +22,17 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   return data;
 }
 
-/** GET /api/entries/search?q=... */
+/** GET /api/entries/search?q=...&type=common|blog */
 export async function searchEntries(
   q: string,
-  limit?: number
+  options?: { limit?: number; type?: "common" | "blog" }
 ): Promise<EntrySearchResponse> {
   const params = new URLSearchParams({ q });
-  if (limit !== undefined) {
-    params.set("limit", String(limit));
+  if (options?.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+  if (options?.type) {
+    params.set("type", options.type);
   }
 
   const response = await fetch(`/api/entries/search?${params.toString()}`);

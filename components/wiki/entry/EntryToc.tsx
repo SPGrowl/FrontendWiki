@@ -42,8 +42,7 @@ export function EntryToc({ headings }: EntryTocProps) {
   if (headings.length === 0) return null;
 
   return (
-    // 使用粘性布局，固定在页面顶部
-    <nav className="sticky top-20 space-y-1 text-sm">
+    <nav className="space-y-1 text-sm">
       {headings.map(({ id, text, depth }, index) => (
         <a
           key={id}

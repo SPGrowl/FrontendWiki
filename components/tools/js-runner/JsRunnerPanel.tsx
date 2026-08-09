@@ -35,11 +35,18 @@ const logTypeClass: Record<LogEntry["type"], string> = {
 };
 
 export function JsRunnerPanel() {
-  const { open, closeRunner } = useJsRunner();
+  const { open, closeRunner, pendingCode, clearPendingCode } = useJsRunner();
   const [code, setCode] = React.useState(DEFAULT_CODE);
   const [output, setOutput] = React.useState<OutputLine[]>([]);
   const [running, setRunning] = React.useState(false);
   const outputRef = React.useRef<HTMLPreElement>(null);
+
+  React.useEffect(() => {
+    if (!open || pendingCode == null) return;
+    setCode(pendingCode);
+    setOutput([]);
+    clearPendingCode();
+  }, [open, pendingCode, clearPendingCode]);
 
   const handleRun = React.useCallback(async () => {
     setRunning(true);

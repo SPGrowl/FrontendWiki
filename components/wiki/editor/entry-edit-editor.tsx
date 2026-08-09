@@ -8,6 +8,8 @@ import { ParentEntryPicker } from "@/components/wiki/editor/parent-entry-picker"
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { createDraft, updateDraft } from "@/lib/api/drafts";
 import { updateEntry } from "@/lib/api/entries";
 import type { EntryType } from "@/type/entry";
 import type { EntrySearchItem } from "@/type/entry-api";
@@ -15,35 +17,46 @@ import type { EntrySearchItem } from "@/type/entry-api";
 interface EntryEditEditorProps {
   entryId: string;
   entryType: EntryType;
+  publishedContent: string;
   initialName: string;
   initialSlug: string;
   initialContent: string;
+  initialMessage?: string;
   initialParent: EntrySearchItem | null;
   readHref: string;
   canEditMetadata: boolean;
+  draftId?: string;
 }
 
 export function EntryEditEditor({
   entryId,
   entryType,
+  publishedContent,
   initialName,
   initialSlug,
   initialContent,
+  initialMessage = "",
   initialParent,
   readHref,
   canEditMetadata,
+  draftId: initialDraftId,
 }: EntryEditEditorProps) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [slug, setSlug] = useState(initialSlug);
   const [content, setContent] = useState(initialContent);
+  const [message, setMessage] = useState(initialMessage);
   const [parent, setParent] = useState<EntrySearchItem | null>(initialParent);
+  const [draftId, setDraftId] = useState<string | undefined>(initialDraftId);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [pending, setPending] = useState<"draft" | "publish" | null>(null);
 
   const trimmedName = name.trim();
   const trimmedContent = content.trim();
   const trimmedSlug = slug.trim();
+  const trimmedMessage = message.trim();
+  const publishedBaseline = publishedContent.trim();
 
   const hasMetadataChanges = useMemo(() => {
     if (!canEditMetadata) return false;
@@ -64,14 +77,22 @@ export function EntryEditEditor({
     initialParent,
   ]);
 
-  const hasContentChanges = trimmedContent !== initialContent.trim();
+  const hasContentChanges = trimmedContent !== publishedBaseline;
 
   const canSubmit =
     trimmedContent.length > 0 &&
     (!canEditMetadata || trimmedName.length > 0) &&
     (hasContentChanges || hasMetadataChanges);
 
-  function validate() {
+  const canSaveDraft =
+    trimmedName.length > 0 && (!canEditMetadata || trimmedSlug.length > 0);
+
+  function clearMessages() {
+    setError(null);
+    setNotice(null);
+  }
+
+  function validatePublish() {
     if (canEditMetadata && !trimmedName) {
       setError("请填写词条名称");
       return false;
@@ -88,19 +109,76 @@ export function EntryEditEditor({
       setError("没有可保存的变更");
       return false;
     }
-    setError(null);
+    if (hasContentChanges && !trimmedMessage) {
+      setError("发布正文变更时请填写版本说明");
+      return false;
+    }
+    clearMessages();
     return true;
   }
 
-  async function handlePublish() {
-    if (!validate()) return;
+  function validateDraft() {
+    if (!trimmedName) {
+      setError("请填写词条名称");
+      return false;
+    }
+    if (canEditMetadata && !trimmedSlug) {
+      setError("请填写 URL 别名");
+      return false;
+    }
+    clearMessages();
+    return true;
+  }
 
-    setPending(true);
-    setError(null);
+  function buildDraftPayload() {
+    return {
+      draftType: "edit" as const,
+      entryId,
+      name: trimmedName,
+      content,
+      message: trimmedMessage,
+      ...(canEditMetadata
+        ? {
+            slug: trimmedSlug,
+            parentId: entryType === "common" ? parent?.id ?? null : null,
+          }
+        : {}),
+    };
+  }
+
+  async function handleSaveDraft() {
+    if (!validateDraft()) return;
+
+    setPending("draft");
+    clearMessages();
+
+    try {
+      if (draftId) {
+        await updateDraft(draftId, buildDraftPayload());
+      } else {
+        const result = await createDraft(buildDraftPayload());
+        setDraftId(result.draft.id);
+      }
+
+      setNotice("草稿已保存");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存草稿失败");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function handlePublish() {
+    if (!validatePublish()) return;
+
+    setPending("publish");
+    clearMessages();
 
     try {
       const result = await updateEntry(entryId, {
         content: trimmedContent,
+        ...(hasContentChanges ? { message: trimmedMessage } : {}),
         ...(canEditMetadata
           ? {
               name: trimmedName,
@@ -113,7 +191,7 @@ export function EntryEditEditor({
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "发布失败");
-      setPending(false);
+      setPending(null);
     }
   }
 
@@ -142,7 +220,7 @@ export function EntryEditEditor({
               onChange={(event) => setName(event.target.value)}
               placeholder="词条名称"
               required
-              disabled={pending || !canEditMetadata}
+              disabled={pending !== null || !canEditMetadata}
               readOnly={!canEditMetadata}
             />
             {!canEditMetadata ? (
@@ -164,7 +242,7 @@ export function EntryEditEditor({
                   onChange={(event) => setSlug(event.target.value)}
                   placeholder="例如 es6-plus"
                   required
-                  disabled={pending}
+                  disabled={pending !== null}
                 />
                 <p className="text-xs text-muted-foreground">
                   用于 URL 路径的单段标识，修改后不产生新版本
@@ -188,38 +266,81 @@ export function EntryEditEditor({
                 id="entry-slug"
                 value={slug}
                 onChange={(event) => setSlug(event.target.value)}
-                disabled={pending}
+                disabled={pending !== null}
               />
+              <p className="text-xs text-muted-foreground">
+                路径固定为{" "}
+                <code className="text-foreground">
+                  /entry/blog/{slug || "…"}
+                </code>
+                ；类型创建后不可更改
+              </p>
             </div>
           ) : null}
         </div>
 
         <EntryEditorWorkspace
           content={content}
+          baselineContent={publishedContent}
           onChange={setContent}
-          disabled={pending}
+          disabled={pending !== null}
         />
+
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="entry-message" className="text-xs font-medium">
+            说明
+          </label>
+          <Textarea
+            id="entry-message"
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder={
+              hasContentChanges
+                ? "草稿说明；发布正文变更时将作为版本说明"
+                : "草稿说明"
+            }
+            rows={2}
+            disabled={pending !== null}
+          />
+        </div>
 
         {error ? (
           <p className="shrink-0 text-xs text-destructive">{error}</p>
+        ) : null}
+        {notice ? (
+          <p className="shrink-0 text-xs text-muted-foreground">{notice}</p>
         ) : null}
 
         <div className="flex shrink-0 items-center justify-between border-t border-border pt-3">
           <Button
             type="button"
             variant="outline"
-            disabled={pending}
+            disabled={pending !== null}
             onClick={() => router.push(readHref)}
           >
             取消
           </Button>
-          <Button
-            type="button"
-            disabled={!canSubmit || pending}
-            onClick={handlePublish}
-          >
-            {pending ? "保存中…" : hasContentChanges ? "发布" : "保存设置"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={!canSaveDraft || pending !== null}
+              onClick={handleSaveDraft}
+            >
+              {pending === "draft" ? "保存中…" : "存草稿"}
+            </Button>
+            <Button
+              type="button"
+              disabled={!canSubmit || pending !== null}
+              onClick={handlePublish}
+            >
+              {pending === "publish"
+                ? "保存中…"
+                : hasContentChanges
+                  ? "发布"
+                  : "保存设置"}
+            </Button>
+          </div>
         </div>
       </WikiCard>
     </div>

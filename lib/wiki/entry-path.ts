@@ -4,10 +4,9 @@ import {
   normalizeSlugValue,
   slugFromName,
 } from "@/lib/wiki/entry-slug";
-import type { EntryPublishTarget } from "@/type/entry-api";
+import type { EntryCreateType } from "@/type/entry-api";
 
 export const BLOG_SEGMENT = "blog";
-export const BLOG_HREF_PLACEHOLDER = "<词条ID>";
 const PREVIEW_ID = "preview";
 
 export interface EntryPathSegment {
@@ -31,8 +30,9 @@ export function titleToSlug(title: string): string {
   );
 }
 
-export function buildBlogEntryHref(entryId: string): string {
-  return `/entry/${BLOG_SEGMENT}/${entryId}`;
+/** 博客词条：/entry/blog/{slug} */
+export function buildBlogEntryHref(slug: string): string {
+  return `/entry/${BLOG_SEGMENT}/${encodeURIComponent(normalizeSlugValue(slug))}`;
 }
 
 export function buildCommonEntryHref(chain: EntryPathSegment[]): string {
@@ -45,7 +45,7 @@ export function buildEntryHref(chain: EntryPathSegment[]): string {
 
   const entry = chain[chain.length - 1];
   if (entry.type === "blog" && chain.length === 1) {
-    return buildBlogEntryHref(entry.id);
+    return buildBlogEntryHref(entry.slug);
   }
 
   return buildCommonEntryHref(chain);
@@ -75,7 +75,7 @@ export function buildBreadcrumbs(chain: EntryPathSegment[]): BreadcrumbItem[] {
         id: entry.id,
         slug: entry.slug,
         name: entry.name,
-        href: buildBlogEntryHref(entry.id),
+        href: buildBlogEntryHref(entry.slug),
       },
     ];
   }
@@ -92,8 +92,13 @@ export function formatBreadcrumbPath(breadcrumbs: BreadcrumbItem[]): string {
   return breadcrumbs.map((item) => item.name).join(" / ");
 }
 
+/**
+ * 创建页路径预览。
+ * - blog：固定 /entry/blog/{slug}
+ * - common：parent 为 null 表示顶级；否则挂在父词条下
+ */
 export function buildCreatePreview(
-  target: EntryPublishTarget,
+  entryType: EntryCreateType,
   parent: CreatePreviewParent | null,
   title: string,
   slugOverride?: string
@@ -108,8 +113,11 @@ export function buildCreatePreview(
   const encodedSlug =
     slug === "…" ? slug : encodeURIComponent(normalizeSlugValue(slug));
 
-  if (target === "blog") {
-    const href = buildBlogEntryHref(BLOG_HREF_PLACEHOLDER);
+  if (entryType === "blog") {
+    const href =
+      slug === "…"
+        ? `/entry/${BLOG_SEGMENT}/…`
+        : buildBlogEntryHref(slug);
     const breadcrumbs: BreadcrumbItem[] = [
       {
         id: BLOG_SEGMENT,
@@ -126,9 +134,11 @@ export function buildCreatePreview(
     };
   }
 
-  if (target === "root") {
+  if (!parent) {
     const href = slug === "…" ? "/entry/…" : `/entry/${encodedSlug}`;
-    const breadcrumbs: BreadcrumbItem[] = [{ id: PREVIEW_ID, slug, name, href }];
+    const breadcrumbs: BreadcrumbItem[] = [
+      { id: PREVIEW_ID, slug, name, href },
+    ];
     return {
       href,
       breadcrumbs,
@@ -136,32 +146,16 @@ export function buildCreatePreview(
     };
   }
 
-  const breadcrumbs: BreadcrumbItem[] = parent
-    ? [
-        ...parent.breadcrumbs,
-        {
-          id: PREVIEW_ID,
-          slug,
-          name,
-          href:
-            slug === "…"
-              ? `${parent.href.replace(/\/$/, "")}/…`
-              : `${parent.href.replace(/\/$/, "")}/${encodedSlug}`,
-        },
-      ]
-    : [
-        {
-          id: PREVIEW_ID,
-          slug,
-          name,
-          href: slug === "…" ? "/entry/…" : `/entry/${encodedSlug}`,
-        },
-      ];
-
-  const parentBase = parent?.href.replace(/\/$/, "") ?? "/entry";
+  const parentBase = parent.href.replace(/\/$/, "") || "/entry";
+  const href =
+    slug === "…" ? `${parentBase}/…` : `${parentBase}/${encodedSlug}`;
+  const breadcrumbs: BreadcrumbItem[] = [
+    ...parent.breadcrumbs,
+    { id: PREVIEW_ID, slug, name, href },
+  ];
 
   return {
-    href: slug === "…" ? `${parentBase}/…` : `${parentBase}/${encodedSlug}`,
+    href,
     breadcrumbs,
     breadcrumbPath: formatBreadcrumbPath(breadcrumbs),
   };

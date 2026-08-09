@@ -37,7 +37,11 @@ export function SidebarNav({ groups }: { groups: SidebarNavGroup[] }) {
                     />
                   </a>
                 ) : item.href === JS_RUNNER_HREF ? (
-                  <button type="button" onClick={openRunner} className={linkClassName}>
+                  <button
+                    type="button"
+                    onClick={() => openRunner()}
+                    className={linkClassName}
+                  >
                     {item.label}
                   </button>
                 ) : (

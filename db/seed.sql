@@ -186,7 +186,7 @@ SET current_version_id = '00000000-0000-0000-0000-000000000017',
 WHERE id = '00000000-0000-0000-0000-000000000016'
   AND current_version_id IS NULL;
 
--- React 19 词条（blog）
+-- React 19 词条（blog）→ 阅读路径 /entry/blog/react-19-release
 INSERT INTO entries (
   id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
 )
