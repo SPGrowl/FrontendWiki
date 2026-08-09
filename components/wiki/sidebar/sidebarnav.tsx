@@ -1,11 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import type { SidebarNavGroup } from "@/lib/wiki/placeholder-data";
+import { useJsRunner } from "@/components/tools/js-runner/js-runner-context";
+
+const JS_RUNNER_HREF = "/tools/js-runner";
 
 const linkClassName =
-  "flex items-center gap-1 truncate rounded-none px-2 py-1.5 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
+  "flex w-full items-center gap-1 truncate rounded-md px-2 py-1.5 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none";
 
 export function SidebarNav({ groups }: { groups: SidebarNavGroup[] }) {
+  const { openRunner } = useJsRunner();
+
   return (
     <nav className="flex flex-col gap-4 px-2 py-2 text-sm">
       {groups.map((group) => (
@@ -29,6 +36,10 @@ export function SidebarNav({ groups }: { groups: SidebarNavGroup[] }) {
                       aria-hidden
                     />
                   </a>
+                ) : item.href === JS_RUNNER_HREF ? (
+                  <button type="button" onClick={openRunner} className={linkClassName}>
+                    {item.label}
+                  </button>
                 ) : (
                   <Link href={item.href} className={linkClassName}>
                     {item.label}

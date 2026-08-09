@@ -26,11 +26,7 @@ export function WikiCard({
     <Tag
     // 根据传入的参数切换类名
       className={cn(
-        // 视觉层
-        "box-border m-0 border border-[#8d8d8d] bg-[#f6f9fa] text-inherit",
-        // 尺寸：由内容撑开，不限制内部
-        "h-auto w-auto",
-        // 内边距
+        "box-border m-0 w-auto min-h-0 rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm ring-1 ring-foreground/5 transition-shadow duration-200 hover:shadow-md",
         paddingMap[padding],
         className
       )}

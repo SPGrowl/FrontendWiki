@@ -1,10 +1,13 @@
 import "./globals.css";
-import { JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
-
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export default function RootLayout({
   children,
@@ -12,9 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-mono", jetbrainsMono.variable)}>
+    <html lang="zh-CN" className={cn(inter.variable, jetbrainsMono.variable)}>
       <body>
-        {/* 包裹组件，防止Tooltip组件无法正常工作 */}
+        {/* 包裹组件，防止 Tooltip 组件无法正常工作 */}
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>

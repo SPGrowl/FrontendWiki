@@ -3,12 +3,9 @@ import remarkParse from "remark-parse";
 import { visit } from "unist-util-visit";
 import type { Heading, PhrasingContent, Root } from "mdast";
 import GithubSlugger from "github-slugger";
+import type { TocItem } from "@/type/entry";
 
-export interface TocItem {
-  id: string;
-  text: string;
-  depth: number;
-}
+export type { TocItem };
 
 function toPlainText(nodes: PhrasingContent[]): string {
   return nodes

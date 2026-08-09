@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { SidebarGithub } from "./SidebarGithub";
 
 const SIDEBAR_WIDTH = "12rem";
 
@@ -27,9 +28,10 @@ function SidebarToggle({
       aria-label={open ? "折叠侧栏" : "展开侧栏"}
       aria-expanded={open}
       className={cn(
-        "fixed top-1/2 z-[60] flex size-6 -translate-y-1/2 items-center justify-center",
+        "fixed top-1/2 z-[60] flex size-6 -translate-y-1/2 items-center justify-center rounded-r-md",
         "border border-sidebar-border bg-sidebar text-xs text-sidebar-foreground shadow-sm",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        "transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        "focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none",
         open
           ? "left-[calc(var(--sidebar-width)-0.75rem)] max-md:left-[calc(min(18rem,85vw)-0.75rem)]"
           : "left-0",
@@ -79,10 +81,13 @@ export function WikiSidebar({
           open ? "translate-x-0" : "-translate-x-full pointer-events-none"
         )}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+          <SidebarGithub />
+        </div>
       </aside>
 
-      <SidebarToggle open={open} onClick={toggle} className="rounded-r-sm" />
+      <SidebarToggle open={open} onClick={toggle} />
 
       {open && (
         <div

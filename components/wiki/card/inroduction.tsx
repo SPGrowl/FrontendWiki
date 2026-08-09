@@ -8,7 +8,7 @@ interface IntroductionProps {
 
 export function Introduction({ cards }: IntroductionProps) {
   return (
-    <div className="flex flex-col gap-2 md:flex-row">
+    <div className="flex flex-col gap-4 md:flex-row md:gap-4">
       {cards.map((card) => (
         <WikiCard key={card.title} className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold">{card.title}</h1>
@@ -17,7 +17,7 @@ export function Introduction({ cards }: IntroductionProps) {
               <>
                 <Link
                   href={card.linkedTerm.href}
-                  className="text-blue-600 underline"
+                  className="wiki-link underline"
                 >
                   {card.linkedTerm.label}
                 </Link>

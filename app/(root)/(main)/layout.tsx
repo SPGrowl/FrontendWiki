@@ -1,6 +1,4 @@
-import { CategoryNavActive } from "@/components/wiki/CategoryNav/categoryNavActive";
 import { MainContainer } from "@/components/wiki/MainContainer/main";
-import { wikiCategories } from "@/lib/wiki/placeholder-data";
 
 export default function MainGroupLayout({
   children,
@@ -8,8 +6,7 @@ export default function MainGroupLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-2 bg-[#e6eff4] px-4">
-      <CategoryNavActive categories={wikiCategories} />
+    <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-y-auto bg-wiki-surface px-4 py-4 md:gap-6 md:px-6 md:py-6">
       <MainContainer>{children}</MainContainer>
     </div>
   );

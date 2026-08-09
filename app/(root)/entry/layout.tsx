@@ -4,7 +4,7 @@ export default function EntryGroupLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col bg-[#e6eff4] px-4 py-2">
+    <div className="mx-auto w-full max-w-7xl flex-1 bg-wiki-surface px-4 md:px-6">
       {children}
     </div>
   );

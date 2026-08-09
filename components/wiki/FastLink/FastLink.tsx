@@ -27,7 +27,7 @@ export function FastLink({ items, className }: FastLinkProps) {
             title={item.content}
             className={cn(
               "group flex flex-col items-center gap-1.5 rounded-sm p-2",
-              "transition-colors hover:bg-[#e6eff4]"
+              "rounded-md transition-colors hover:bg-muted"
             )}
           >
             <Icon
@@ -35,7 +35,7 @@ export function FastLink({ items, className }: FastLinkProps) {
               className="size-10 transition-transform group-hover:scale-105"
               aria-hidden
             />
-            <span className="w-full truncate text-center text-xs text-[#2e7bd6] group-hover:underline">
+            <span className="w-full truncate text-center text-xs text-wiki-link group-hover:underline">
               {item.content}
             </span>
           </Link>

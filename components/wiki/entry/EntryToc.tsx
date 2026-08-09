@@ -59,7 +59,7 @@ export function EntryToc({ headings }: EntryTocProps) {
             depth === 3 && "pl-4",
             depth === 4 && "pl-8",
             activeId === id
-              ? "font-medium text-blue-600"
+              ? "font-medium text-wiki-link"
               : "text-muted-foreground hover:text-foreground"
           )}
         >

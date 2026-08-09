@@ -5,7 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-mono);
+    --font-sans: var(--font-sans);
+    --font-heading: var(--font-sans);
     --font-mono: var(--font-mono);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -38,6 +39,12 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-wiki-surface: var(--wiki-surface);
+    --color-wiki-link: var(--wiki-link);
+    --color-wiki-accent: var(--wiki-accent);
+    --color-wiki-accent-foreground: var(--wiki-accent-foreground);
+    --color-wiki-accent-muted: var(--wiki-accent-muted);
+    --color-wiki-code-bg: var(--wiki-code-bg);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -50,7 +57,7 @@
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
+    --card: oklch(0.995 0.002 240);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
@@ -58,34 +65,58 @@
     --primary-foreground: oklch(0.985 0 0);
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
+    --muted: oklch(0.965 0.005 240);
+    --muted-foreground: oklch(0.5 0.02 240);
+    --accent: oklch(0.965 0.005 240);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.88 0.01 240);
+    --input: oklch(0.88 0.01 240);
+    --ring: oklch(0.55 0.15 250);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
+    --sidebar: oklch(0.985 0.003 240);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.205 0 0);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent: oklch(0.955 0.008 240);
     --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-border: oklch(0.88 0.01 240);
+    --sidebar-ring: oklch(0.55 0.15 250);
+    --wiki-surface: oklch(0.955 0.012 240);
+    --wiki-link: oklch(0.52 0.14 250);
+    --wiki-accent: oklch(0.52 0.12 140);
+    --wiki-accent-foreground: oklch(0.985 0 0);
+    --wiki-accent-muted: oklch(0.94 0.03 140);
+    --wiki-code-bg: oklch(0.955 0.012 240);
+    --cm-heading-mark: oklch(0.58 0.04 240);
+    --cm-h1: oklch(0.38 0.14 250);
+    --cm-h2: oklch(0.42 0.12 255);
+    --cm-h3: oklch(0.46 0.1 140);
+    --cm-h4: oklch(0.48 0.08 200);
+    --cm-h5: oklch(0.5 0.06 240);
+    --cm-h6: oklch(0.52 0.04 240);
+    --cm-emphasis: oklch(0.4 0.08 300);
+    --cm-quote: oklch(0.48 0.04 240);
+    --cm-list-marker: oklch(0.52 0.12 140);
+    --cm-code: oklch(0.42 0.12 250);
+    --cm-keyword: oklch(0.45 0.14 330);
+    --cm-string: oklch(0.48 0.12 140);
+    --cm-number: oklch(0.5 0.1 60);
+    --cm-type: oklch(0.46 0.12 200);
+    --cm-property: oklch(0.44 0.1 250);
+    --cm-tag: oklch(0.45 0.14 25);
+    --cm-attribute: oklch(0.5 0.1 60);
 }
 
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.19 0.01 240);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
@@ -93,52 +124,167 @@
     --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
+    --muted: oklch(0.24 0.01 240);
     --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
+    --accent: oklch(0.24 0.01 240);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --ring: oklch(0.65 0.12 250);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
+    --sidebar: oklch(0.19 0.01 240);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary: oklch(0.65 0.12 250);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent: oklch(0.24 0.01 240);
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --sidebar-ring: oklch(0.65 0.12 250);
+    --wiki-surface: oklch(0.17 0.012 240);
+    --wiki-link: oklch(0.72 0.12 250);
+    --wiki-accent: oklch(0.65 0.1 140);
+    --wiki-accent-foreground: oklch(0.985 0 0);
+    --wiki-accent-muted: oklch(0.25 0.03 140);
+    --wiki-code-bg: oklch(0.22 0.012 240);
+    --cm-heading-mark: oklch(0.62 0.04 240);
+    --cm-h1: oklch(0.82 0.1 250);
+    --cm-h2: oklch(0.78 0.09 255);
+    --cm-h3: oklch(0.76 0.08 140);
+    --cm-h4: oklch(0.74 0.06 200);
+    --cm-h5: oklch(0.72 0.05 240);
+    --cm-h6: oklch(0.7 0.04 240);
+    --cm-emphasis: oklch(0.78 0.07 300);
+    --cm-quote: oklch(0.72 0.04 240);
+    --cm-list-marker: oklch(0.72 0.08 140);
+    --cm-code: oklch(0.78 0.08 250);
+    --cm-keyword: oklch(0.78 0.1 330);
+    --cm-string: oklch(0.76 0.08 140);
+    --cm-number: oklch(0.78 0.08 60);
+    --cm-type: oklch(0.76 0.08 200);
+    --cm-property: oklch(0.74 0.07 250);
+    --cm-tag: oklch(0.76 0.1 25);
+    --cm-attribute: oklch(0.78 0.08 60);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
+
   body {
-    @apply bg-background text-foreground;
-    }
-  html {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
     @apply font-mono;
-    }
+  }
 }
-.category-nav{
-  display: flex;
-  justify-content: center;
-  gap:5px;
-}
-.category-nav a{
-text-align: center;
-color: black;
-border:1px solid black;
-padding:0.5rem 4rem;
-}
-.category-nav a:hover{
-  color:lightblue;
-  background-color:grey;
+
+@layer components {
+  .wiki-link {
+    @apply text-wiki-link underline-offset-2 transition-colors hover:text-wiki-link/80 hover:underline;
+  }
+
+  .wiki-btn {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-all duration-150;
+    @apply shadow-[0_1px_0_0_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.05)];
+    @apply hover:brightness-105 active:translate-y-px active:shadow-none;
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none;
+  }
+
+  .wiki-btn-primary {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-all duration-150;
+    @apply shadow-[0_1px_0_0_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.05)];
+    @apply hover:brightness-105 active:translate-y-px active:shadow-none;
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none;
+    @apply bg-wiki-accent text-wiki-accent-foreground;
+  }
+
+  .wiki-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-all duration-150;
+    @apply shadow-[0_1px_0_0_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.05)];
+    @apply hover:brightness-105 active:translate-y-px active:shadow-none;
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none;
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  .wiki-prose {
+    @apply text-sm leading-relaxed text-foreground/90;
+  }
+
+  .wiki-prose :where(h2) {
+    @apply mt-8 mb-3 scroll-mt-20 text-xl font-bold;
+  }
+
+  .wiki-prose :where(h3) {
+    @apply mt-6 mb-2 scroll-mt-20 text-lg font-semibold;
+  }
+
+  .wiki-prose :where(h4) {
+    @apply mt-4 mb-2 scroll-mt-20 text-base font-medium;
+  }
+
+  .wiki-prose :where(ul) {
+    @apply my-2 list-disc pl-6;
+  }
+
+  .wiki-prose :where(ol) {
+    @apply my-2 list-decimal pl-6;
+  }
+
+  .wiki-prose :where(li) {
+    @apply my-0.5;
+  }
+
+  .wiki-prose :where(a) {
+    @apply text-wiki-link underline underline-offset-2 transition-colors hover:text-wiki-link/80 hover:underline;
+  }
+
+  .wiki-prose :where(strong) {
+    @apply font-bold;
+  }
+
+  .wiki-prose :where(table) {
+    @apply my-4 w-full border-collapse;
+  }
+
+  .wiki-prose :where(th) {
+    @apply border border-border bg-wiki-code-bg px-3 py-1.5 text-left font-medium;
+  }
+
+  .wiki-prose :where(td) {
+    @apply border border-border px-3 py-1.5;
+  }
+
+  .wiki-prose :where(pre) {
+    @apply my-3 overflow-x-auto rounded-md bg-wiki-code-bg p-3 text-[0.8125rem];
+  }
+
+  .wiki-prose :where(code) {
+    @apply rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem];
+  }
+
+  .wiki-prose :where(pre code) {
+    @apply bg-transparent p-0;
+  }
+
+  .wiki-markdown-editor .cm-editor {
+    height: 100%;
+  }
+
+  .wiki-markdown-editor .cm-scroller {
+    overflow: auto;
+  }
+
+  .wiki-markdown-editor--adaptive .cm-editor {
+    min-height: 100%;
+  }
 }
