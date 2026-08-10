@@ -188,6 +188,16 @@ export interface UserBlogItem {
   updatedAt: string;
 }
 
+/** 首页近期博客 */
+export interface RecentBlogItem {
+  entryId: string;
+  title: string;
+  href: string;
+  authorId: string;
+  authorName: string;
+  updatedAt: string;
+}
+
 /** 讨论评论（单体，暂无回复） */
 export interface EntryComment {
   id: string;

@@ -29,6 +29,7 @@ import type {
   EntryVersion,
   EntryVersionDiffSide,
   EntryVersionListItem,
+  RecentBlogItem,
   RecentContributionItem,
   RelatedEntryies,
   UserBlogItem,
@@ -690,6 +691,48 @@ export async function listRecentContributions(
   }
 
   return items;
+}
+
+const DEFAULT_RECENT_BLOGS = 5;
+
+/**
+ * 首页近期博客：按更新时间倒序。
+ */
+export async function listRecentBlogs(
+  limit = DEFAULT_RECENT_BLOGS
+): Promise<RecentBlogItem[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+  const { rows } = await query<{
+    id: string;
+    slug: string;
+    title: string;
+    author_id: string;
+    author_name: string;
+    updated_at: Date;
+  }>(
+    `SELECT e.id, e.slug, v.title,
+            e.creator_id AS author_id,
+            u.name AS author_name,
+            e.updated_at
+     FROM entries e
+     INNER JOIN entry_versions v ON v.id = e.current_version_id
+     INNER JOIN users u ON u.id = e.creator_id
+     WHERE e.type = 'blog'
+       AND e.status = 'published'
+     ORDER BY e.updated_at DESC
+     LIMIT $1`,
+    [safeLimit]
+  );
+
+  return rows.map((row) => ({
+    entryId: row.id,
+    title: row.title,
+    href: buildBlogEntryHref(row.slug),
+    authorId: row.author_id,
+    authorName: row.author_name,
+    updatedAt: row.updated_at.toISOString(),
+  }));
 }
 
 /**

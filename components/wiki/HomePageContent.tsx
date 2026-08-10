@@ -1,20 +1,19 @@
-import { Introduction } from "@/components/wiki/card/inroduction";
+import { RecentBlogs } from "@/components/wiki/home/RecentBlogs";
 import { RecentContributions } from "@/components/wiki/home/RecentContributions";
-import type { HomePageData } from "@/lib/wiki/home-page-data";
-import type { RecentContributionItem } from "@/type/entry";
+import type { RecentBlogItem, RecentContributionItem } from "@/type/entry";
 
 interface HomePageContentProps {
-  data: HomePageData;
+  blogs: RecentBlogItem[];
   contributions: RecentContributionItem[];
 }
 
 export function HomePageContent({
-  data,
+  blogs,
   contributions,
 }: HomePageContentProps) {
   return (
     <div className="flex flex-col gap-6">
-      <Introduction cards={data.introductions} />
+      <RecentBlogs items={blogs} />
       <RecentContributions items={contributions} />
     </div>
   );
