@@ -180,6 +180,14 @@ export interface RecentContributionItem {
   createdAt: string;
 }
 
+/** 用户主页：该用户发布的博客摘要 */
+export interface UserBlogItem {
+  entryId: string;
+  title: string;
+  href: string;
+  updatedAt: string;
+}
+
 /** 讨论评论（单体，暂无回复） */
 export interface EntryComment {
   id: string;

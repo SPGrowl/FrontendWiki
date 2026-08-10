@@ -31,6 +31,7 @@ import type {
   EntryVersionListItem,
   RecentContributionItem,
   RelatedEntryies,
+  UserBlogItem,
 } from "@/type/entry";
 import type {
   EntryPreviewData,
@@ -689,6 +690,94 @@ export async function listRecentContributions(
   }
 
   return items;
+}
+
+/**
+ * 用户主页：某用户对百科词条的近期编辑（不含博客）。
+ */
+export async function listUserContributions(
+  userId: string,
+  limit = 30
+): Promise<RecentContributionItem[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+  const { rows } = await query<{
+    version_id: string;
+    entry_id: string;
+    entry_name: string;
+    message: string;
+    contributor_id: string;
+    contributor_name: string;
+    created_at: Date;
+  }>(
+    `SELECT v.id AS version_id,
+            v.entry_id,
+            e.name AS entry_name,
+            v.message,
+            v.contributor_id,
+            u.name AS contributor_name,
+            v.created_at
+     FROM entry_versions v
+     INNER JOIN entries e ON e.id = v.entry_id
+     INNER JOIN users u ON u.id = v.contributor_id
+     WHERE e.status = 'published'
+       AND e.type = 'common'
+       AND v.contributor_id = $1
+     ORDER BY v.created_at DESC
+     LIMIT $2`,
+    [userId, safeLimit]
+  );
+
+  const items: RecentContributionItem[] = [];
+  for (const row of rows) {
+    const chain = await fetchEntryChain(row.entry_id);
+    items.push({
+      versionId: row.version_id,
+      entryId: row.entry_id,
+      entryName: row.entry_name,
+      entryHref: buildEntryHref(chain),
+      message: row.message?.trim() || "（无提交说明）",
+      contributorId: row.contributor_id,
+      contributorName: row.contributor_name,
+      createdAt: row.created_at.toISOString(),
+    });
+  }
+
+  return items;
+}
+
+/**
+ * 用户主页：该用户创建的已发布博客。
+ */
+export async function listUserBlogs(
+  userId: string,
+  limit = 30
+): Promise<UserBlogItem[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+  const { rows } = await query<{
+    id: string;
+    slug: string;
+    title: string;
+    updated_at: Date;
+  }>(
+    `SELECT e.id, e.slug, v.title, e.updated_at
+     FROM entries e
+     INNER JOIN entry_versions v ON v.id = e.current_version_id
+     WHERE e.creator_id = $1
+       AND e.type = 'blog'
+       AND e.status = 'published'
+     ORDER BY e.updated_at DESC
+     LIMIT $2`,
+    [userId, safeLimit]
+  );
+
+  return rows.map((row) => ({
+    entryId: row.id,
+    title: row.title,
+    href: buildBlogEntryHref(row.slug),
+    updatedAt: row.updated_at.toISOString(),
+  }));
 }
 
 async function findCommonEntryIdBySlug(
