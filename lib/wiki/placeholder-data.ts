@@ -59,9 +59,9 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
 ];
 
 export const wikiCategories: WikiCategory[] = [
-  { content: "首页", href: "/", label: "Home" },
-  { content: "原生", href: "/navigation/native", label: "Native" },
-  { content: "框架", href: "/navigation/framework", label: "Framework" },
-  { content: "工具链", href: "/navigation/toolchain", label: "Toolchain" },
-  { content: "JS全栈", href: "/navigation/fullstack", label: "FullStack" },
+  { content: "首页", href: "/", label: "首页" },
+  { content: "原生", href: "/navigation/native", label: "原生" },
+  { content: "框架", href: "/navigation/framework", label: "框架" },
+  { content: "工具链", href: "/navigation/toolchain", label: "工具链" },
+  { content: "JS全栈", href: "/navigation/fullstack", label: "JS全栈" },
 ];

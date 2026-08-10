@@ -172,25 +172,3 @@ export function getNavigationPage(path: string): NavigationPageData | null {
 export function getCategoryLabelByPath(path: string): string | null {
   return navigationPages[path]?.categoryLabel ?? null;
 }
-
-export interface HeaderNavCategory {
-  path: string;
-  label: string;
-  links: { label: string; href: string }[];
-}
-
-const headerNavPaths = ["native", "framework", "toolchain", "fullstack"] as const;
-
-export const headerNavCategories: HeaderNavCategory[] = headerNavPaths.map(
-  (path) => {
-    const page = navigationPages[path];
-    return {
-      path,
-      label: page.categoryLabel,
-      links: page.fastLinks.map(({ content, href }) => ({
-        label: content,
-        href,
-      })),
-    };
-  }
-);

@@ -4,7 +4,6 @@ import { WikiLogo } from "@/components/wiki/header/wiki-logo";
 import { WikiNavMenu } from "@/components/wiki/header/wiki-nav-menu";
 import { WikiSearch } from "@/components/wiki/header/wiki-search";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { headerNavCategories } from "@/lib/wiki/navigation-data";
 import { cn } from "@/lib/utils";
 
 export async function WikiHeader() {
@@ -14,7 +13,7 @@ export async function WikiHeader() {
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 md:gap-4 md:px-6">
       <div className="flex min-w-0 items-center gap-1 md:gap-2">
         <WikiLogo />
-        <WikiNavMenu categories={headerNavCategories} />
+        <WikiNavMenu />
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-3 md:gap-4">
