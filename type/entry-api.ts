@@ -1,4 +1,9 @@
-import type { BreadcrumbItem, Entry, EntryVersion } from "@/type/entry";
+import type {
+  BreadcrumbItem,
+  Entry,
+  EntryType,
+  EntryVersion,
+} from "@/type/entry";
 
 export interface EntrySearchItem {
   id: string;
@@ -6,13 +11,26 @@ export interface EntrySearchItem {
   href: string;
   breadcrumbs: BreadcrumbItem[];
   breadcrumbPath: string;
+  /** 正文纯文本缩略（由 content 现算，无独立 summary 字段） */
+  excerpt: string;
 }
 
 export interface EntrySearchResponse {
   items: EntrySearchItem[];
 }
 
-import type { EntryType } from "@/type/entry";
+/** GET /api/entries/preview */
+export interface EntryPreviewData {
+  title: string;
+  href: string;
+  excerpt: string;
+}
+
+export interface EntryPreviewResponse {
+  preview: EntryPreviewData | null;
+  /** 链接无效或词条不存在时的说明 */
+  error?: string;
+}
 
 /** 创建时选定的词条类型（创建后不可变） */
 export type EntryCreateType = "common" | "blog";

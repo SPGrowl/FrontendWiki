@@ -12,12 +12,13 @@ const tabs = [
   { id: "edit", label: "编辑" },
 ] as const;
 
-type EntryToolbarTab = (typeof tabs)[number]["id"];
+export type EntryToolbarTab = (typeof tabs)[number]["id"];
 
 interface EntryToolbarProps {
   activeTab?: EntryToolbarTab;
   readHref: string;
   editHref: string;
+  historyHref: string;
   breadcrumbs: BreadcrumbItem[];
 }
 
@@ -25,15 +26,17 @@ export function EntryToolbar({
   activeTab = "read",
   readHref,
   editHref,
+  historyHref,
   breadcrumbs,
 }: EntryToolbarProps) {
   const hrefByTab: Partial<Record<EntryToolbarTab, string>> = {
     read: readHref,
     edit: editHref,
+    history: historyHref,
   };
 
   return (
-    <div className="flex min-w-0 items-end">
+    <div className="flex min-w-0 items-end justify-between gap-2">
       <nav
         aria-label="词条功能"
         className="flex shrink-0 flex-wrap items-end gap-0"
@@ -58,14 +61,20 @@ export function EntryToolbar({
           }
 
           return (
-            <button key={tab.id} type="button" className={className}>
+            <button
+              key={tab.id}
+              type="button"
+              disabled
+              title="即将推出"
+              className={cn(className, "cursor-not-allowed opacity-60")}
+            >
               {tab.label}
             </button>
           );
         })}
       </nav>
 
-      <EntryBreadcrumb items={breadcrumbs} />
+      <EntryBreadcrumb items={breadcrumbs} className="max-w-[55%]" />
     </div>
   );
 }

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import type { ComponentProps } from "react";
+import { EntryLinkPreview } from "@/components/wiki/entry/entry-link-preview";
 import {
   isExternalHref,
   isInternalEntryHref,
+  normalizeInternalEntryHref,
 } from "@/lib/wiki/resolve-entry-link";
 import { cn } from "@/lib/utils";
 
@@ -33,10 +35,32 @@ export function MarkdownLink({
   }
 
   if (isInternalEntryHref(href)) {
+    const normalized = normalizeInternalEntryHref(href);
+    if (!normalized) {
+      return (
+        <span className={cn(linkClassName, "cursor-not-allowed opacity-70")}>
+          {children}
+        </span>
+      );
+    }
+
+    const hashIndex = href.indexOf("#");
+    const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
+    const fullHref = `${normalized}${hash}`;
+
+    // 带页内锚点时仍可跳转；预览按词条 path（无 hash）拉取
+    if (hash) {
+      return (
+        <Link href={fullHref} className={linkClassName}>
+          {children}
+        </Link>
+      );
+    }
+
     return (
-      <Link href={href} className={linkClassName}>
+      <EntryLinkPreview href={normalized} className={linkClassName}>
         {children}
-      </Link>
+      </EntryLinkPreview>
     );
   }
 

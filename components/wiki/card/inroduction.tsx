@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { IntroCard } from "@/lib/wiki/navigation-data";
+import type { IntroCard } from "@/lib/wiki/home-page-data";
 import { WikiCard } from "./WikiCard";
 
 interface IntroductionProps {

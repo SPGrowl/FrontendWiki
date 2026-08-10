@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
-const COOKIE_NAME = "wiki_session";
+export const SESSION_COOKIE_NAME = "wiki_session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 function getSessionSecret(): string {
@@ -42,7 +42,7 @@ export async function setSessionCookie(userId: string): Promise<void> {
   const token = signPayload(userId);
   const cookieStore = await cookies();
 
-  cookieStore.set(COOKIE_NAME, token, {
+  cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -53,12 +53,18 @@ export async function setSessionCookie(userId: string): Promise<void> {
 
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.set(SESSION_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  });
 }
 
 export async function getSessionUserId(): Promise<string | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   return verifyToken(token);
 }

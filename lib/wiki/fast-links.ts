@@ -1,7 +1,6 @@
 import type { LinkItem } from "@/components/wiki/FastLink/FastLink";
-import { getNavigationPage } from "./navigation-data";
+import { homePageData } from "@/lib/wiki/home-page-data";
 
-export async function getFastLinks(path = "home"): Promise<LinkItem[]> {
-  const page = getNavigationPage(path) ?? getNavigationPage("home");
-  return page?.fastLinks ?? [];
+export async function getFastLinks(): Promise<LinkItem[]> {
+  return homePageData.fastLinks;
 }

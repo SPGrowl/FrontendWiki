@@ -2,6 +2,7 @@ import type {
   CreateEntryRequest,
   CreateEntryResponse,
   EntryErrorResponse,
+  EntryPreviewResponse,
   EntrySearchResponse,
   UpdateEntryRequest,
   UpdateEntryResponse,
@@ -37,6 +38,31 @@ export async function searchEntries(
 
   const response = await fetch(`/api/entries/search?${params.toString()}`);
   return parseJsonResponse<EntrySearchResponse>(response);
+}
+
+/**
+ * GET /api/entries/preview?href=entry/...
+ * 无效链接返回 preview: null + error，不抛错（便于悬停卡展示）。
+ */
+export async function fetchEntryPreview(
+  href: string
+): Promise<EntryPreviewResponse> {
+  const params = new URLSearchParams({ href });
+  const response = await fetch(`/api/entries/preview?${params.toString()}`);
+  const data = (await response.json()) as Partial<EntryPreviewResponse> &
+    Partial<EntryErrorResponse>;
+
+  if (response.status >= 500) {
+    throw new Error(
+      typeof data.error === "string" ? data.error : "获取词条预览失败"
+    );
+  }
+
+  return {
+    preview: data.preview ?? null,
+    error:
+      typeof data.error === "string" ? data.error : undefined,
+  };
 }
 
 /** POST /api/entries */

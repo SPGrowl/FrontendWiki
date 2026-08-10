@@ -17,6 +17,7 @@ export const ROOT_PARENT_OPTION: EntrySearchItem = {
   href: "/entry",
   breadcrumbs: [],
   breadcrumbPath: "/",
+  excerpt: "",
 };
 
 interface ParentEntryPickerProps {

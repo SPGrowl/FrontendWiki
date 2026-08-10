@@ -9,12 +9,6 @@ export interface SidebarNavGroup {
   items: SidebarNavLink[];
 }
 
-export interface WikiCategory {
-  content: string;
-  href: string;
-  label: string;
-}
-
 export const sidebarNavGroups: SidebarNavGroup[] = [
   {
     title: "参与贡献",
@@ -56,12 +50,4 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
       { label: "npm", href: "https://www.npmjs.com", external: true },
     ],
   },
-];
-
-export const wikiCategories: WikiCategory[] = [
-  { content: "首页", href: "/", label: "首页" },
-  { content: "原生", href: "/navigation/native", label: "原生" },
-  { content: "框架", href: "/navigation/framework", label: "框架" },
-  { content: "工具链", href: "/navigation/toolchain", label: "工具链" },
-  { content: "JS全栈", href: "/navigation/fullstack", label: "JS全栈" },
 ];

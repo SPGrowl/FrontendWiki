@@ -1,6 +1,9 @@
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { extractHeadings } from "@/lib/wiki/extract-headings";
-import { buildEntryEditHref } from "@/lib/wiki/entry-path";
+import {
+  buildEntryEditHref,
+  buildEntryHistoryHref,
+} from "@/lib/wiki/entry-path";
 import type { BreadcrumbItem, Contributor, RelatedEntryies } from "@/type/entry";
 import { EntryContent } from "./EntryContent";
 import { EntryContributors } from "./EntryContributors";
@@ -27,12 +30,10 @@ export function WikiEntry({
   relatedEntries,
   contributors,
 }: WikiEntryProps) {
-  // 解析出层级结构
   const headings = extractHeadings(content);
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 justify-between gap-2">
-      {/* 窄屏时隐藏目录；与工具栏顶对齐，独立滚动 */}
       <aside className="hidden w-44 shrink-0 overflow-y-auto lg:block">
         <EntryToc headings={headings} />
       </aside>
@@ -41,6 +42,7 @@ export function WikiEntry({
         <EntryToolbar
           readHref={path}
           editHref={buildEntryEditHref(path)}
+          historyHref={buildEntryHistoryHref(path)}
           breadcrumbs={breadcrumbs}
         />
         <WikiCard

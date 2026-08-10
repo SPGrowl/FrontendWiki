@@ -1,8 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Command as CommandPrimitive } from "cmdk";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  MagnifyingGlassIcon,
+} from "@phosphor-icons/react";
 import {
   Command,
   CommandDialog,
@@ -11,13 +16,9 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { searchEntries } from "@/lib/api/entries";
 import { cn } from "@/lib/utils";
-
-const searchHistory = [
-  { id: "1", title: "JavaScript", subtitle: "脚本语言" },
-  { id: "2", title: "TypeScript", subtitle: "脚本语言" },
-  { id: "3", title: "Vite", subtitle: "工具链" },
-];
+import type { EntrySearchItem } from "@/type/entry-api";
 
 function SearchShortcut({
   children,
@@ -43,8 +44,87 @@ function SearchShortcut({
   );
 }
 
+function SearchResultItem({
+  item,
+  expanded,
+  onToggleExpand,
+  onSelect,
+}: {
+  item: EntrySearchItem;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onSelect: () => void;
+}) {
+  const hasExcerpt = Boolean(item.excerpt?.trim());
+  const canExpand = hasExcerpt && item.excerpt.length > 80;
+
+  return (
+    <CommandItem
+      value={`${item.name} ${item.breadcrumbPath}`}
+      onSelect={onSelect}
+      className="mx-2 flex flex-col items-stretch gap-1 rounded-md px-3 py-2.5 aria-selected:bg-wiki-accent/10 data-selected:bg-wiki-accent/10"
+    >
+      <div className="flex min-w-0 items-baseline gap-2">
+        <span className="truncate font-medium text-foreground">{item.name}</span>
+        {item.breadcrumbPath ? (
+          <span className="truncate text-xs text-muted-foreground">
+            {item.breadcrumbPath}
+          </span>
+        ) : null}
+      </div>
+      {hasExcerpt ? (
+        <div className="flex items-start gap-2">
+          <p
+            className={cn(
+              "min-w-0 flex-1 text-[13px] leading-snug text-muted-foreground",
+              !expanded && "line-clamp-1"
+            )}
+          >
+            {item.excerpt}
+          </p>
+          {canExpand ? (
+            <button
+              type="button"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[11px] text-wiki-accent hover:bg-wiki-accent/10"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleExpand();
+              }}
+              onPointerDown={(event) => {
+                // 避免 cmdk 抢占选中
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+            >
+              {expanded ? (
+                <>
+                  收起
+                  <CaretUpIcon className="size-3" aria-hidden />
+                </>
+              ) : (
+                <>
+                  展开
+                  <CaretDownIcon className="size-3" aria-hidden />
+                </>
+              )}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </CommandItem>
+  );
+}
+
 export function WikiSearch() {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [items, setItems] = React.useState<EntrySearchItem[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(
+    () => new Set()
+  );
 
   React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -57,6 +137,59 @@ export function WikiSearch() {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  React.useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setItems([]);
+      setExpandedIds(new Set());
+      setLoading(false);
+    }
+  }, [open]);
+
+  React.useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const { items: next } = await searchEntries(trimmed, { limit: 12 });
+        setItems(next);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 280);
+
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  function toggleExpanded(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function goToEntry(href: string) {
+    setOpen(false);
+    router.push(href);
+  }
+
+  const trimmedQuery = query.trim();
+  const emptyLabel = !trimmedQuery
+    ? "输入词条或博客名称开始搜索"
+    : loading
+      ? "搜索中…"
+      : "未找到匹配的词条";
 
   return (
     <>
@@ -81,7 +214,7 @@ export function WikiSearch() {
         open={open}
         onOpenChange={setOpen}
         title="搜索 Frontend Wiki"
-        description="搜索词条与文档"
+        description="按词条或博客名称搜索"
         className="overflow-hidden rounded-lg sm:max-w-xl"
         showCloseButton={false}
       >
@@ -95,35 +228,36 @@ export function WikiSearch() {
               aria-hidden
             />
             <CommandPrimitive.Input
-              placeholder="搜索 Frontend Wiki"
+              value={query}
+              onValueChange={setQuery}
+              placeholder="搜索词条或博客名称"
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
 
           <CommandList className="max-h-80">
             <CommandEmpty className="py-8 text-muted-foreground">
-              输入关键词开始搜索
+              {emptyLabel}
             </CommandEmpty>
-            <CommandGroup heading="搜索历史">
-              {searchHistory.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  value={item.title}
-                  className="mx-2 rounded-md px-3 py-2.5 aria-selected:bg-wiki-accent aria-selected:text-white data-selected:bg-wiki-accent data-selected:text-white"
-                >
-                  <span className="font-medium">{item.title}</span>
-                  <span className="text-muted-foreground data-selected:text-white/80">
-                    / {item.subtitle}
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {items.length > 0 ? (
+              <CommandGroup heading="搜索结果">
+                {items.map((item) => (
+                  <SearchResultItem
+                    key={item.id}
+                    item={item}
+                    expanded={expandedIds.has(item.id)}
+                    onToggleExpand={() => toggleExpanded(item.id)}
+                    onSelect={() => goToEntry(item.href)}
+                  />
+                ))}
+              </CommandGroup>
+            ) : null}
           </CommandList>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <SearchShortcut>↵</SearchShortcut>
-              选择
+              打开
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-flex items-center gap-0.5">

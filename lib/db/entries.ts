@@ -2,26 +2,42 @@ import crypto from "node:crypto";
 import type { PoolClient } from "pg";
 import { getPool, query } from "@/lib/db";
 import { extractHeadings } from "@/lib/wiki/extract-headings";
+import { buildEntryExcerpt } from "@/lib/wiki/entry-excerpt";
 import {
   buildBreadcrumbs,
   buildBlogEntryHref,
   buildCommonEntryHref,
   buildEntryHref,
+  buildEntryHistoryHref,
   isUuid,
   type EntryPathSegment,
 } from "@/lib/wiki/entry-path";
 import { normalizePathSegment, resolveEntrySlug, validateSlug } from "@/lib/wiki/entry-slug";
+import {
+  entryHrefToSegments,
+  normalizeInternalEntryHref,
+} from "@/lib/wiki/resolve-entry-link";
 import type {
   BreadcrumbItem,
   Contributor,
   Entry,
+  EntryDiffPageData,
+  EntryHistoryPageData,
   EntryLink,
   EntryPageData,
   EntryType,
   EntryVersion,
+  EntryVersionDiffSide,
+  EntryVersionListItem,
   RelatedEntryies,
 } from "@/type/entry";
+import type {
+  EntryPreviewData,
+  EntrySearchItem,
+} from "@/type/entry-api";
 import type { UserRole } from "@/type/user";
+
+export type { EntrySearchItem };
 
 interface EntryRow {
   id: string;
@@ -120,34 +136,30 @@ async function fetchEntryChain(
   return mapChain(result.rows);
 }
 
-export interface EntrySearchItem {
-  id: string;
-  name: string;
-  href: string;
-  breadcrumbs: BreadcrumbItem[];
-  breadcrumbPath: string;
-}
-
 export async function searchEntriesByName(
   searchQuery: string,
   limit = 10,
   options?: { type?: EntryType }
 ): Promise<EntrySearchItem[]> {
   const typeFilter = options?.type;
-  const { rows } = await query<Pick<EntryRow, "id" | "name">>(
+  const { rows } = await query<
+    Pick<EntryRow, "id" | "name"> & { content: string }
+  >(
     typeFilter
-      ? `SELECT id, name
-         FROM entries
-         WHERE status = 'published'
-           AND type = $3
-           AND name ILIKE $1
-         ORDER BY name
+      ? `SELECT e.id, e.name, v.content
+         FROM entries e
+         INNER JOIN entry_versions v ON v.id = e.current_version_id
+         WHERE e.status = 'published'
+           AND e.type = $3
+           AND e.name ILIKE $1
+         ORDER BY e.name
          LIMIT $2`
-      : `SELECT id, name
-         FROM entries
-         WHERE status = 'published'
-           AND name ILIKE $1
-         ORDER BY name
+      : `SELECT e.id, e.name, v.content
+         FROM entries e
+         INNER JOIN entry_versions v ON v.id = e.current_version_id
+         WHERE e.status = 'published'
+           AND e.name ILIKE $1
+         ORDER BY e.name
          LIMIT $2`,
     typeFilter
       ? [`%${searchQuery}%`, limit, typeFilter]
@@ -164,10 +176,31 @@ export async function searchEntriesByName(
       href: buildEntryHref(chain),
       breadcrumbs,
       breadcrumbPath: breadcrumbs.map((item) => item.name).join(" / "),
+      excerpt: buildEntryExcerpt(row.content),
     });
   }
 
   return items;
+}
+
+/** 按站内 href（`entry/...` 或 `/entry/...`）取悬停预览；无效链接返回 null */
+export async function getEntryPreviewByHref(
+  href: string
+): Promise<EntryPreviewData | null> {
+  const normalized = normalizeInternalEntryHref(href);
+  if (!normalized || normalized === "/entry") return null;
+
+  const segments = entryHrefToSegments(normalized);
+  if (!segments || segments.length === 0) return null;
+
+  const entry = await getEntryPageDataBySegments(segments);
+  if (!entry) return null;
+
+  return {
+    title: entry.title || entry.path,
+    href: entry.path,
+    excerpt: buildEntryExcerpt(entry.content),
+  };
 }
 
 interface EntryPageRow {
@@ -428,6 +461,180 @@ export async function getEntryPageDataBySegments(
   return getCommonEntryPageData(slugs);
 }
 
+interface HistoryVersionRow {
+  id: string;
+  version_no: number;
+  title: string;
+  message: string;
+  contributor_id: string;
+  contributor_name: string;
+  created_at: Date;
+  current_version_id: string | null;
+  entry_name: string;
+}
+
+async function loadEntryHistoryPageData(
+  entryId: string
+): Promise<EntryHistoryPageData | null> {
+  const { rows: entryRows } = await query<{
+    id: string;
+    name: string;
+    status: string;
+    current_version_id: string | null;
+  }>(
+    `SELECT id, name, status, current_version_id
+     FROM entries
+     WHERE id = $1 AND status = 'published'
+     LIMIT 1`,
+    [entryId]
+  );
+
+  const entry = entryRows[0];
+  if (!entry) return null;
+
+  const chain = await fetchEntryChain(entry.id);
+  const breadcrumbs = buildBreadcrumbs(chain);
+  const readPath = buildEntryHref(chain);
+
+  const { rows } = await query<HistoryVersionRow>(
+    `SELECT v.id, v.version_no, v.title, v.message, v.contributor_id,
+            v.created_at, u.name AS contributor_name,
+            e.current_version_id, e.name AS entry_name
+     FROM entry_versions v
+     INNER JOIN users u ON u.id = v.contributor_id
+     INNER JOIN entries e ON e.id = v.entry_id
+     WHERE v.entry_id = $1
+     ORDER BY v.version_no DESC`,
+    [entryId]
+  );
+
+  const versions: EntryVersionListItem[] = rows.map((row, index) => {
+    const older = rows[index + 1];
+    return {
+      id: row.id,
+      versionNo: row.version_no,
+      title: row.title,
+      message: row.message || "（无提交说明）",
+      contributorId: row.contributor_id,
+      contributorName: row.contributor_name,
+      createdAt: row.created_at.toISOString(),
+      isCurrent: row.id === entry.current_version_id,
+      previousVersionId: older?.id ?? null,
+    };
+  });
+
+  const current = rows.find((row) => row.id === entry.current_version_id);
+
+  return {
+    entryId: entry.id,
+    entryName: entry.name,
+    title: current?.title ?? entry.name,
+    readPath,
+    breadcrumbs,
+    versions,
+  };
+}
+
+export async function getEntryHistoryPageDataBySegments(
+  rawSlugs: string[]
+): Promise<EntryHistoryPageData | null> {
+  const page = await getEntryPageDataBySegments(rawSlugs);
+  if (!page) return null;
+  return loadEntryHistoryPageData(page.id);
+}
+
+interface DiffVersionRow {
+  id: string;
+  version_no: number;
+  title: string;
+  content: string;
+  message: string;
+  contributor_id: string;
+  contributor_name: string;
+  created_at: Date;
+}
+
+function mapDiffSide(
+  row: DiffVersionRow,
+  currentVersionId: string | null
+): EntryVersionDiffSide {
+  return {
+    id: row.id,
+    versionNo: row.version_no,
+    title: row.title,
+    content: row.content,
+    message: row.message || "（无提交说明）",
+    contributorId: row.contributor_id,
+    contributorName: row.contributor_name,
+    createdAt: row.created_at.toISOString(),
+    isCurrent: row.id === currentVersionId,
+  };
+}
+
+export async function getEntryDiffPageData(
+  entryId: string,
+  fromVersionId: string,
+  toVersionId: string
+): Promise<EntryDiffPageData | null> {
+  if (!isUuid(fromVersionId) || !isUuid(toVersionId)) return null;
+
+  const { rows: entryRows } = await query<{
+    id: string;
+    name: string;
+    status: string;
+    current_version_id: string | null;
+  }>(
+    `SELECT id, name, status, current_version_id
+     FROM entries
+     WHERE id = $1 AND status = 'published'
+     LIMIT 1`,
+    [entryId]
+  );
+
+  const entry = entryRows[0];
+  if (!entry) return null;
+
+  const { rows } = await query<DiffVersionRow>(
+    `SELECT v.id, v.version_no, v.title, v.content, v.message,
+            v.contributor_id, v.created_at, u.name AS contributor_name
+     FROM entry_versions v
+     INNER JOIN users u ON u.id = v.contributor_id
+     WHERE v.entry_id = $1 AND v.id = ANY($2::uuid[])
+     LIMIT 2`,
+    [entryId, [fromVersionId, toVersionId]]
+  );
+
+  if (fromVersionId === toVersionId) return null;
+
+  const fromRow = rows.find((row) => row.id === fromVersionId);
+  const toRow = rows.find((row) => row.id === toVersionId);
+  if (!fromRow || !toRow) return null;
+
+  const chain = await fetchEntryChain(entry.id);
+  const breadcrumbs = buildBreadcrumbs(chain);
+  const readPath = buildEntryHref(chain);
+
+  return {
+    entryId: entry.id,
+    entryName: entry.name,
+    readPath,
+    historyPath: buildEntryHistoryHref(readPath),
+    breadcrumbs,
+    from: mapDiffSide(fromRow, entry.current_version_id),
+    to: mapDiffSide(toRow, entry.current_version_id),
+  };
+}
+
+export async function getEntryDiffPageDataBySegments(
+  rawSlugs: string[],
+  fromVersionId: string,
+  toVersionId: string
+): Promise<EntryDiffPageData | null> {
+  const page = await getEntryPageDataBySegments(rawSlugs);
+  if (!page) return null;
+  return getEntryDiffPageData(page.id, fromVersionId, toVersionId);
+}
+
 async function findCommonEntryIdBySlug(
   slug: string,
   parentId: string | null
@@ -493,18 +700,30 @@ export type UpdateEntryResult = CreateEntryResult;
 async function buildEntrySearchItem(
   entryId: string
 ): Promise<EntrySearchItem | null> {
-  const entry = await findEntryById(entryId);
-  if (!entry || entry.status !== "published") return null;
+  const { rows } = await query<
+    Pick<EntryRow, "id" | "name" | "status"> & { content: string | null }
+  >(
+    `SELECT e.id, e.name, e.status, v.content
+     FROM entries e
+     LEFT JOIN entry_versions v ON v.id = e.current_version_id
+     WHERE e.id = $1
+     LIMIT 1`,
+    [entryId]
+  );
+
+  const row = rows[0];
+  if (!row || row.status !== "published") return null;
 
   const chain = await fetchEntryChain(entryId);
   const breadcrumbs = buildBreadcrumbs(chain);
 
   return {
-    id: entry.id,
-    name: entry.name,
+    id: row.id,
+    name: row.name,
     href: buildEntryHref(chain),
     breadcrumbs,
     breadcrumbPath: breadcrumbs.map((item) => item.name).join(" / "),
+    excerpt: buildEntryExcerpt(row.content ?? ""),
   };
 }
 

@@ -59,6 +59,31 @@ export function buildEntryEditHref(readPath: string): string {
   return readPath.replace(/^\/entry(?=\/|$)/, "/entry/edit");
 }
 
+/** 阅读路径 → 历史：/entry/foo → /entry/history/foo */
+export function buildEntryHistoryHref(readPath: string): string {
+  if (!readPath.startsWith("/entry")) {
+    return "/entry/history";
+  }
+
+  return readPath.replace(/^\/entry(?=\/|$)/, "/entry/history");
+}
+
+/** 阅读路径 → 版本对比：/entry/diff/foo?from=&to=（from 为较旧，to 为较新） */
+export function buildEntryDiffHref(
+  readPath: string,
+  fromVersionId: string,
+  toVersionId: string
+): string {
+  const base = readPath.startsWith("/entry")
+    ? readPath.replace(/^\/entry(?=\/|$)/, "/entry/diff")
+    : "/entry/diff";
+  const params = new URLSearchParams({
+    from: fromVersionId,
+    to: toVersionId,
+  });
+  return `${base}?${params.toString()}`;
+}
+
 export function buildBreadcrumbs(chain: EntryPathSegment[]): BreadcrumbItem[] {
   if (chain.length === 0) return [];
 

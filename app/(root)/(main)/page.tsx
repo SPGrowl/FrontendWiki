@@ -1,13 +1,6 @@
-import { notFound } from "next/navigation";
-import { NavigationPageContent } from "@/components/wiki/NavigationPageContent";
-import { getNavigationPage } from "@/lib/wiki/navigation-data";
+import { HomePageContent } from "@/components/wiki/HomePageContent";
+import { homePageData } from "@/lib/wiki/home-page-data";
 
 export default function RootPage() {
-  const page = getNavigationPage("home");
-
-  if (!page) {
-    notFound();
-  }
-
-  return <NavigationPageContent data={page} />;
+  return <HomePageContent data={homePageData} />;
 }

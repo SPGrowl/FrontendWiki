@@ -128,16 +128,44 @@ export interface EntryVersionListItem {
   contributorName: string;
   createdAt: string;
   isCurrent: boolean;
+  /** 时间序上的上一版（更旧）；首版为 null */
+  previousVersionId: string | null;
 }
 
 /** 版本历史页读模型 */
 export interface EntryHistoryPageData {
   entryId: string;
   entryName: string;
+  title: string;
   readPath: string;
   breadcrumbs: BreadcrumbItem[];
-  relatedEntries: RelatedEntryies;
   versions: EntryVersionListItem[];
+}
+
+/** 单侧版本（对比用） */
+export interface EntryVersionDiffSide {
+  id: string;
+  versionNo: number;
+  title: string;
+  content: string;
+  message: string;
+  contributorId: string;
+  contributorName: string;
+  createdAt: string;
+  isCurrent: boolean;
+}
+
+/** 版本对比页读模型 */
+export interface EntryDiffPageData {
+  entryId: string;
+  entryName: string;
+  readPath: string;
+  historyPath: string;
+  breadcrumbs: BreadcrumbItem[];
+  /** 较旧一侧 */
+  from: EntryVersionDiffSide;
+  /** 较新一侧 */
+  to: EntryVersionDiffSide;
 }
 
 /** 指定版本阅读页读模型 */

@@ -6,15 +6,15 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** 顶栏导航配置：改展示名或链接只改这里 */
+/** 顶栏词条导航：分类只负责展开，子项才跳转词条 */
 const HEADER_NAV = [
   {
+    id: "native",
     name: "原生",
-    href: "/navigation/native",
     children: [
       { name: "HTML", href: "/entry/html" },
-      { name: "CSS", href: "/entry/css" },
-      { name: "JavaScript", href: "/entry/javascript" },
+      { name: "CSS", href: "/entry/CSS" },
+      { name: "JavaScript", href: "/entry/js" },
       { name: "TypeScript", href: "/entry/typescript" },
       { name: "Web API", href: "/entry/web-api" },
       { name: "sass", href: "/entry/sass" },
@@ -24,8 +24,8 @@ const HEADER_NAV = [
     ],
   },
   {
+    id: "framework",
     name: "框架",
-    href: "/navigation/framework",
     children: [
       { name: "React", href: "/entry/react" },
       { name: "Vue.js", href: "/entry/vue" },
@@ -38,8 +38,8 @@ const HEADER_NAV = [
     ],
   },
   {
+    id: "toolchain",
     name: "工具链",
-    href: "/navigation/toolchain",
     children: [
       { name: "Vite", href: "/entry/vite" },
       { name: "Webpack", href: "/entry/webpack" },
@@ -53,8 +53,8 @@ const HEADER_NAV = [
     ],
   },
   {
+    id: "fullstack",
     name: "JS全栈",
-    href: "/navigation/fullstack",
     children: [
       { name: "Node.js", href: "/entry/node-js" },
       { name: "Next.js", href: "/entry/nextjs" },
@@ -68,26 +68,30 @@ const HEADER_NAV = [
   },
 ] as const;
 
+function isEntryActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function WikiNavMenu() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-  const [openHref, setOpenHref] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!openHref) return;
+    if (!openId) return;
 
     function handlePointerDown(event: MouseEvent) {
       if (
         navRef.current &&
         !navRef.current.contains(event.target as Node)
       ) {
-        setOpenHref(null);
+        setOpenId(null);
       }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOpenHref(null);
+        setOpenId(null);
       }
     }
 
@@ -97,68 +101,50 @@ export function WikiNavMenu() {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [openHref]);
+  }, [openId]);
 
-  function toggleCategory(href: string) {
-    setOpenHref((current) => (current === href ? null : href));
+  function toggleCategory(id: string) {
+    setOpenId((current) => (current === id ? null : id));
   }
 
   return (
     <nav
       ref={navRef}
-      aria-label="Wiki categories"
+      aria-label="词条分类导航"
       className="hidden items-center md:flex"
     >
       {HEADER_NAV.map((category) => {
-        const isOpen = openHref === category.href;
-        const isActive =
-          pathname === category.href ||
-          pathname.startsWith(`${category.href}/`);
-        const panelId = `wiki-nav-panel-${category.href}`;
+        const isOpen = openId === category.id;
+        const isActive = category.children.some((link) =>
+          isEntryActive(pathname, link.href)
+        );
+        const panelId = `wiki-nav-panel-${category.id}`;
 
         return (
-          <div key={category.href} className="relative">
-            <div
+          <div key={category.id} className="relative">
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              aria-haspopup="true"
+              aria-controls={panelId}
+              onClick={() => toggleCategory(category.id)}
               className={cn(
-                "inline-flex h-9 items-stretch overflow-hidden border text-sm transition-colors",
+                "inline-flex h-9 items-center gap-1 border px-2.5 text-sm transition-colors",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                 isOpen || isActive
                   ? "border-border bg-wiki-accent-muted font-medium text-wiki-accent"
                   : "border-transparent text-foreground/80 hover:bg-muted hover:text-foreground"
               )}
             >
-              <Link
-                href={category.href}
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => setOpenHref(null)}
+              {category.name}
+              <CaretDownIcon
+                aria-hidden
                 className={cn(
-                  "inline-flex items-center px-2.5",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  "size-3.5 transition-transform duration-200",
+                  isOpen && "rotate-180"
                 )}
-              >
-                {category.name}
-              </Link>
-              <button
-                type="button"
-                aria-label={`${category.name}子菜单`}
-                aria-expanded={isOpen}
-                aria-haspopup="true"
-                aria-controls={panelId}
-                onClick={() => toggleCategory(category.href)}
-                className={cn(
-                  "inline-flex items-center border-l border-transparent px-1.5",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                  (isOpen || isActive) && "border-border/60"
-                )}
-              >
-                <CaretDownIcon
-                  aria-hidden
-                  className={cn(
-                    "size-3.5 transition-transform duration-200",
-                    isOpen && "rotate-180"
-                  )}
-                />
-              </button>
-            </div>
+              />
+            </button>
 
             <div
               id={panelId}
@@ -173,21 +159,27 @@ export function WikiNavMenu() {
             >
               <div className="min-w-48 border border-border bg-popover p-3 shadow-md ring-1 ring-foreground/10">
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                  {category.children.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        tabIndex={isOpen ? undefined : -1}
-                        onClick={() => setOpenHref(null)}
-                        className={cn(
-                          "block rounded-sm px-2 py-1.5 text-sm text-foreground/85",
-                          "transition-colors hover:bg-muted hover:text-foreground"
-                        )}
-                      >
-                        {link.name}
-                      </Link>
-                    </li>
-                  ))}
+                  {category.children.map((link) => {
+                    const childActive = isEntryActive(pathname, link.href);
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          tabIndex={isOpen ? undefined : -1}
+                          aria-current={childActive ? "page" : undefined}
+                          onClick={() => setOpenId(null)}
+                          className={cn(
+                            "block rounded-sm px-2 py-1.5 text-sm transition-colors",
+                            childActive
+                              ? "bg-wiki-accent-muted font-medium text-wiki-accent"
+                              : "text-foreground/85 hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          {link.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
