@@ -68,6 +68,15 @@ export function buildEntryHistoryHref(readPath: string): string {
   return readPath.replace(/^\/entry(?=\/|$)/, "/entry/history");
 }
 
+/** 阅读路径 → 讨论：/entry/foo → /entry/discuss/foo */
+export function buildEntryDiscussHref(readPath: string): string {
+  if (!readPath.startsWith("/entry")) {
+    return "/entry/discuss";
+  }
+
+  return readPath.replace(/^\/entry(?=\/|$)/, "/entry/discuss");
+}
+
 /** 阅读路径 → 版本对比：/entry/diff/foo?from=&to=（from 为较旧，to 为较新） */
 export function buildEntryDiffHref(
   readPath: string,
@@ -117,10 +126,26 @@ export function formatBreadcrumbPath(breadcrumbs: BreadcrumbItem[]): string {
   return breadcrumbs.map((item) => item.name).join(" / ");
 }
 
+/** 路径预览用：把 percent-encoding 还原为可读字符（中文 slug 等） */
+export function toDisplayEntryPath(path: string): string {
+  return path
+    .split("/")
+    .map((segment) => {
+      if (!segment || !segment.includes("%")) return segment;
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join("/");
+}
+
 /**
  * 创建页路径预览。
  * - blog：固定 /entry/blog/{slug}
  * - common：parent 为 null 表示顶级；否则挂在父词条下
+ * 预览展示明文 slug（与合法标题一致）；实际跳转链接仍可用编码形式。
  */
 export function buildCreatePreview(
   entryType: EntryCreateType,
@@ -135,14 +160,14 @@ export function buildCreatePreview(
     slugFromName(name) ||
     "…";
 
-  const encodedSlug =
-    slug === "…" ? slug : encodeURIComponent(normalizeSlugValue(slug));
+  const displaySlug =
+    slug === "…" ? slug : normalizeSlugValue(slug);
 
   if (entryType === "blog") {
     const href =
       slug === "…"
         ? `/entry/${BLOG_SEGMENT}/…`
-        : buildBlogEntryHref(slug);
+        : `/entry/${BLOG_SEGMENT}/${displaySlug}`;
     const breadcrumbs: BreadcrumbItem[] = [
       {
         id: BLOG_SEGMENT,
@@ -150,7 +175,13 @@ export function buildCreatePreview(
         name: "博客",
         href: `/entry/${BLOG_SEGMENT}`,
       },
-      { id: PREVIEW_ID, slug, name, href },
+      {
+        id: PREVIEW_ID,
+        slug,
+        name,
+        // 祖先链可点跳转仍用编码 href
+        href: slug === "…" ? href : buildBlogEntryHref(slug),
+      },
     ];
     return {
       href,
@@ -160,9 +191,17 @@ export function buildCreatePreview(
   }
 
   if (!parent) {
-    const href = slug === "…" ? "/entry/…" : `/entry/${encodedSlug}`;
+    const href = slug === "…" ? "/entry/…" : `/entry/${displaySlug}`;
     const breadcrumbs: BreadcrumbItem[] = [
-      { id: PREVIEW_ID, slug, name, href },
+      {
+        id: PREVIEW_ID,
+        slug,
+        name,
+        href:
+          slug === "…"
+            ? href
+            : buildEncodedCommonHref([normalizeSlugValue(slug)]),
+      },
     ];
     return {
       href,
@@ -171,12 +210,23 @@ export function buildCreatePreview(
     };
   }
 
-  const parentBase = parent.href.replace(/\/$/, "") || "/entry";
+  const parentDisplayBase =
+    toDisplayEntryPath(parent.href.replace(/\/$/, "")) || "/entry";
   const href =
-    slug === "…" ? `${parentBase}/…` : `${parentBase}/${encodedSlug}`;
+    slug === "…"
+      ? `${parentDisplayBase}/…`
+      : `${parentDisplayBase}/${displaySlug}`;
   const breadcrumbs: BreadcrumbItem[] = [
     ...parent.breadcrumbs,
-    { id: PREVIEW_ID, slug, name, href },
+    {
+      id: PREVIEW_ID,
+      slug,
+      name,
+      href:
+        slug === "…"
+          ? href
+          : `${parent.href.replace(/\/$/, "")}/${encodeURIComponent(normalizeSlugValue(slug))}`,
+    },
   ];
 
   return {

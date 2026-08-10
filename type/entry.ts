@@ -168,6 +168,38 @@ export interface EntryDiffPageData {
   to: EntryVersionDiffSide;
 }
 
+/** 首页近期贡献（仅百科词条编辑，不含博客） */
+export interface RecentContributionItem {
+  versionId: string;
+  entryId: string;
+  entryName: string;
+  entryHref: string;
+  message: string;
+  contributorId: string;
+  contributorName: string;
+  createdAt: string;
+}
+
+/** 讨论评论（单体，暂无回复） */
+export interface EntryComment {
+  id: string;
+  entryId: string;
+  content: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string;
+}
+
+/** 讨论页读模型 */
+export interface EntryDiscussPageData {
+  entryId: string;
+  entryName: string;
+  title: string;
+  readPath: string;
+  breadcrumbs: BreadcrumbItem[];
+  comments: EntryComment[];
+}
+
 /** 指定版本阅读页读模型 */
 export interface EntryVersionPageData extends EntryPageData {
   versionNo: number;

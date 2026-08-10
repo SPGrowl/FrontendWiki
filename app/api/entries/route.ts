@@ -53,9 +53,16 @@ export async function POST(request: Request) {
     );
   }
 
-  if (parentId === undefined || slugInput === undefined) {
+  if (parentId === undefined) {
     return NextResponse.json<EntryErrorResponse>(
-      { error: "parentId 或 slug 格式无效" },
+      { error: "parentId 格式无效" },
+      { status: 400 }
+    );
+  }
+
+  if (slugInput === undefined) {
+    return NextResponse.json<EntryErrorResponse>(
+      { error: "slug 格式无效" },
       { status: 400 }
     );
   }
@@ -86,6 +93,7 @@ export async function POST(request: Request) {
     }
   }
 
+  // slug 未填写（null）时用标题；标题不合法则要求手填 slug
   const slugResult = resolveEntrySlug(name, slugInput);
   if (!slugResult.ok) {
     return NextResponse.json<EntryErrorResponse>(

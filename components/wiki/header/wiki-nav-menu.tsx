@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -68,12 +67,7 @@ const HEADER_NAV = [
   },
 ] as const;
 
-function isEntryActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 export function WikiNavMenu() {
-  const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -115,9 +109,6 @@ export function WikiNavMenu() {
     >
       {HEADER_NAV.map((category) => {
         const isOpen = openId === category.id;
-        const isActive = category.children.some((link) =>
-          isEntryActive(pathname, link.href)
-        );
         const panelId = `wiki-nav-panel-${category.id}`;
 
         return (
@@ -131,8 +122,8 @@ export function WikiNavMenu() {
               className={cn(
                 "inline-flex h-9 items-center gap-1 border px-2.5 text-sm transition-colors",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                isOpen || isActive
-                  ? "border-border bg-wiki-accent-muted font-medium text-wiki-accent"
+                isOpen
+                  ? "border-border bg-muted font-medium text-foreground"
                   : "border-transparent text-foreground/80 hover:bg-muted hover:text-foreground"
               )}
             >
@@ -159,27 +150,21 @@ export function WikiNavMenu() {
             >
               <div className="min-w-48 border border-border bg-popover p-3 shadow-md ring-1 ring-foreground/10">
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                  {category.children.map((link) => {
-                    const childActive = isEntryActive(pathname, link.href);
-                    return (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          tabIndex={isOpen ? undefined : -1}
-                          aria-current={childActive ? "page" : undefined}
-                          onClick={() => setOpenId(null)}
-                          className={cn(
-                            "block rounded-sm px-2 py-1.5 text-sm transition-colors",
-                            childActive
-                              ? "bg-wiki-accent-muted font-medium text-wiki-accent"
-                              : "text-foreground/85 hover:bg-muted hover:text-foreground"
-                          )}
-                        >
-                          {link.name}
-                        </Link>
-                      </li>
-                    );
-                  })}
+                  {category.children.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        tabIndex={isOpen ? undefined : -1}
+                        onClick={() => setOpenId(null)}
+                        className={cn(
+                          "block rounded-sm px-2 py-1.5 text-sm text-foreground/85",
+                          "transition-colors hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>

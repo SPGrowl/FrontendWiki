@@ -208,7 +208,8 @@ export function EntryEditor({
         content: trimmedContent,
         type: entryType,
         parentId: entryType === "common" ? parent?.id ?? null : null,
-        slug: needsCustomSlug ? trimmedCustomSlug : undefined,
+        // 未手填时传 null，由服务端用标题生成；标题非法时前端已拦截
+        slug: needsCustomSlug ? trimmedCustomSlug : null,
         message: trimmedMessage || undefined,
       });
       router.push(result.href);

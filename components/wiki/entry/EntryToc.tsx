@@ -42,29 +42,33 @@ export function EntryToc({ headings }: EntryTocProps) {
   if (headings.length === 0) return null;
 
   return (
-    <nav className="space-y-1 text-sm">
-      {headings.map(({ id, text, depth }, index) => (
-        <a
-          key={id}
-          href={`#${id}`}
-          onClick={(event) => {
-            event.preventDefault();
-            //根据ID滚动到目标标题位置
-            document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-            setActiveId(id);
-          }}
-          className={cn(
-            "block py-0.5 transition-colors",
-            depth === 3 && "pl-4",
-            depth === 4 && "pl-8",
-            activeId === id
-              ? "font-medium text-wiki-link"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          {index + 1} {text}
-        </a>
-      ))}
+    <nav aria-label="目录" className="text-sm">
+      <div className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground">
+        目录
+      </div>
+      <div className="space-y-1">
+        {headings.map(({ id, text, depth }, index) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            onClick={(event) => {
+              event.preventDefault();
+              document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+              setActiveId(id);
+            }}
+            className={cn(
+              "block py-0.5 transition-colors",
+              depth === 3 && "pl-4",
+              depth === 4 && "pl-8",
+              activeId === id
+                ? "font-medium text-wiki-link"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {index + 1} {text}
+          </a>
+        ))}
+      </div>
     </nav>
   );
 }

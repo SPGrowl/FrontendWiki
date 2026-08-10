@@ -3,6 +3,7 @@ import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { EntryToolbar } from "@/components/wiki/entry/EntryToolbar";
 import {
   buildEntryDiffHref,
+  buildEntryDiscussHref,
   buildEntryEditHref,
   buildEntryHistoryHref,
 } from "@/lib/wiki/entry-path";
@@ -31,6 +32,7 @@ interface EntryHistoryViewProps {
 export function EntryHistoryView({ data }: EntryHistoryViewProps) {
   const historyHref = buildEntryHistoryHref(data.readPath);
   const editHref = buildEntryEditHref(data.readPath);
+  const discussHref = buildEntryDiscussHref(data.readPath);
   const currentVersionId =
     data.versions.find((item) => item.isCurrent)?.id ?? null;
 
@@ -41,6 +43,7 @@ export function EntryHistoryView({ data }: EntryHistoryViewProps) {
         readHref={data.readPath}
         editHref={editHref}
         historyHref={historyHref}
+        discussHref={discussHref}
         breadcrumbs={data.breadcrumbs}
       />
       <WikiCard

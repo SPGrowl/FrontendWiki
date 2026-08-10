@@ -19,6 +19,7 @@ interface EntryToolbarProps {
   readHref: string;
   editHref: string;
   historyHref: string;
+  discussHref: string;
   breadcrumbs: BreadcrumbItem[];
 }
 
@@ -27,12 +28,14 @@ export function EntryToolbar({
   readHref,
   editHref,
   historyHref,
+  discussHref,
   breadcrumbs,
 }: EntryToolbarProps) {
   const hrefByTab: Partial<Record<EntryToolbarTab, string>> = {
     read: readHref,
     edit: editHref,
     history: historyHref,
+    discuss: discussHref,
   };
 
   return (

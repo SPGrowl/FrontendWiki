@@ -1,6 +1,7 @@
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { extractHeadings } from "@/lib/wiki/extract-headings";
 import {
+  buildEntryDiscussHref,
   buildEntryEditHref,
   buildEntryHistoryHref,
 } from "@/lib/wiki/entry-path";
@@ -43,6 +44,7 @@ export function WikiEntry({
           readHref={path}
           editHref={buildEntryEditHref(path)}
           historyHref={buildEntryHistoryHref(path)}
+          discussHref={buildEntryDiscussHref(path)}
           breadcrumbs={breadcrumbs}
         />
         <WikiCard

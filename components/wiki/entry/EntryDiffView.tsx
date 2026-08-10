@@ -3,6 +3,7 @@ import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { EntryToolbar } from "@/components/wiki/entry/EntryToolbar";
 import { MarkdownDiffViewer } from "@/components/wiki/entry/markdown-diff-viewer";
 import {
+  buildEntryDiscussHref,
   buildEntryEditHref,
   buildEntryHistoryHref,
 } from "@/lib/wiki/entry-path";
@@ -37,6 +38,7 @@ interface EntryDiffViewProps {
 export function EntryDiffView({ data }: EntryDiffViewProps) {
   const historyHref = buildEntryHistoryHref(data.readPath);
   const editHref = buildEntryEditHref(data.readPath);
+  const discussHref = buildEntryDiscussHref(data.readPath);
 
   return (
     <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
@@ -45,6 +47,7 @@ export function EntryDiffView({ data }: EntryDiffViewProps) {
         readHref={data.readPath}
         editHref={editHref}
         historyHref={historyHref}
+        discussHref={discussHref}
         breadcrumbs={data.breadcrumbs}
       />
       <WikiCard

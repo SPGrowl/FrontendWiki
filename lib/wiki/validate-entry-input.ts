@@ -12,11 +12,16 @@ export function normalizeEntryName(name: unknown): string | null {
   return trimmed;
 }
 
+/**
+ * 规范化创建/更新时的 slug 输入。
+ * - 缺省 / null / "" → null（表示未填写，创建时由标题生成）
+ * - 非字符串 → undefined（格式无效）
+ * - 非空字符串 → 规范化后的 slug
+ */
 export function normalizeEntrySlugInput(
   slug: unknown
 ): string | null | undefined {
-  if (slug === undefined) return undefined;
-  if (slug === null || slug === "") return null;
+  if (slug === undefined || slug === null || slug === "") return null;
   if (typeof slug !== "string") return undefined;
   const trimmed = slug.normalize("NFC").trim();
   return trimmed.length > 0 ? trimmed : null;

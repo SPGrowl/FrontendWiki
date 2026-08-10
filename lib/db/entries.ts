@@ -29,6 +29,7 @@ import type {
   EntryVersion,
   EntryVersionDiffSide,
   EntryVersionListItem,
+  RecentContributionItem,
   RelatedEntryies,
 } from "@/type/entry";
 import type {
@@ -633,6 +634,61 @@ export async function getEntryDiffPageDataBySegments(
   const page = await getEntryPageDataBySegments(rawSlugs);
   if (!page) return null;
   return getEntryDiffPageData(page.id, fromVersionId, toVersionId);
+}
+
+const DEFAULT_RECENT_CONTRIBUTIONS = 10;
+
+/**
+ * 首页近期贡献：按版本时间倒序。
+ * 仅 published 的 common 词条，不含 blog。
+ */
+export async function listRecentContributions(
+  limit = DEFAULT_RECENT_CONTRIBUTIONS
+): Promise<RecentContributionItem[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+  const { rows } = await query<{
+    version_id: string;
+    entry_id: string;
+    entry_name: string;
+    message: string;
+    contributor_id: string;
+    contributor_name: string;
+    created_at: Date;
+  }>(
+    `SELECT v.id AS version_id,
+            v.entry_id,
+            e.name AS entry_name,
+            v.message,
+            v.contributor_id,
+            u.name AS contributor_name,
+            v.created_at
+     FROM entry_versions v
+     INNER JOIN entries e ON e.id = v.entry_id
+     INNER JOIN users u ON u.id = v.contributor_id
+     WHERE e.status = 'published'
+       AND e.type = 'common'
+     ORDER BY v.created_at DESC
+     LIMIT $1`,
+    [safeLimit]
+  );
+
+  const items: RecentContributionItem[] = [];
+  for (const row of rows) {
+    const chain = await fetchEntryChain(row.entry_id);
+    items.push({
+      versionId: row.version_id,
+      entryId: row.entry_id,
+      entryName: row.entry_name,
+      entryHref: buildEntryHref(chain),
+      message: row.message?.trim() || "（无提交说明）",
+      contributorId: row.contributor_id,
+      contributorName: row.contributor_name,
+      createdAt: row.created_at.toISOString(),
+    });
+  }
+
+  return items;
 }
 
 async function findCommonEntryIdBySlug(
