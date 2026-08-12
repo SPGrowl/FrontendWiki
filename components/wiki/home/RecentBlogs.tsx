@@ -25,7 +25,7 @@ export function RecentBlogs({
           {items.map((item) => (
             <li
               key={item.entryId}
-              className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-3 text-sm"
+              className="flex items-baseline gap-x-2 gap-y-1 py-3 text-sm"
             >
               <time
                 dateTime={item.updatedAt}
@@ -39,16 +39,13 @@ export function RecentBlogs({
               </span>
               <Link
                 href={item.href}
-                className="min-w-0 font-medium text-wiki-link hover:underline"
+                className="min-w-0 truncate font-medium text-wiki-link hover:underline"
               >
                 {item.title}
               </Link>
-              <span className="text-muted-foreground" aria-hidden>
-                ·
-              </span>
               <Link
                 href={`/user/${item.authorId}`}
-                className="shrink-0 text-wiki-link hover:underline"
+                className="ml-auto shrink-0 text-wiki-link hover:underline"
               >
                 {item.authorName}
               </Link>

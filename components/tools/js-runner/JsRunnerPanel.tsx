@@ -3,12 +3,12 @@
 import * as React from "react";
 import { XIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import { formatDisplayValue, formatLogArgs } from "@/lib/tools/js-runner/format-value";
+import { formatLogArgs } from "@/lib/tools/js-runner/format-value";
 import { runInSandbox } from "@/lib/tools/js-runner/run-in-sandbox";
 import type { LogEntry } from "@/lib/tools/js-runner/types";
 import { useJsRunner } from "./js-runner-context";
 
-const DEFAULT_CODE = `// 使用 console.log 输出结果，最后一行的返回值也会显示
+const DEFAULT_CODE = `// 使用 console.log / warn / error / info 输出结果
 console.log(typeof null);
 console.log([] + {});
 console.log(NaN === NaN);
@@ -24,7 +24,6 @@ Function.prototype.myBind = function (ctx, ...args) {
 
 type OutputLine =
   | { kind: "log"; entry: LogEntry }
-  | { kind: "return"; value: unknown }
   | { kind: "error"; message: string };
 
 const logTypeClass: Record<LogEntry["type"], string> = {
@@ -59,9 +58,7 @@ export function JsRunnerPanel() {
       entry,
     }));
 
-    if (result.success) {
-      lines.push({ kind: "return", value: result.returnValue });
-    } else if (result.error) {
+    if (!result.success && result.error) {
       lines.push({ kind: "error", message: result.error });
     }
 
@@ -165,15 +162,6 @@ export function JsRunnerPanel() {
                         [{line.entry.type}]{" "}
                       </span>
                       {formatLogArgs(line.entry.args)}
-                    </div>
-                  );
-                }
-
-                if (line.kind === "return") {
-                  return (
-                    <div key={index} className="text-wiki-accent">
-                      <span className="text-muted-foreground">=&gt; </span>
-                      {formatDisplayValue(line.value)}
                     </div>
                   );
                 }

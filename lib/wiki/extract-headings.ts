@@ -10,7 +10,15 @@ export type { TocItem };
 function toPlainText(nodes: PhrasingContent[]): string {
   return nodes
     .map((node) => {
-      if (node.type === "text") return node.value;
+      if (node.type === "text" || node.type === "inlineCode") {
+        return node.value;
+      }
+      if (node.type === "break") {
+        return " ";
+      }
+      if (node.type === "image" || node.type === "imageReference") {
+        return node.alt ?? "";
+      }
       if ("children" in node) {
         return toPlainText(node.children as PhrasingContent[]);
       }

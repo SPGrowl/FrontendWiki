@@ -9,5 +9,4 @@ export interface SandboxResult {
   success: boolean;
   error?: string;
   logs: LogEntry[];
-  returnValue?: unknown;
 }

@@ -25,7 +25,7 @@ export function RecentContributions({
           {items.map((item) => (
             <li
               key={item.versionId}
-              className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-3 text-sm"
+              className="flex items-baseline gap-x-2 gap-y-1 py-3 text-sm"
             >
               <time
                 dateTime={item.createdAt}
@@ -37,21 +37,20 @@ export function RecentContributions({
               <span className="text-muted-foreground" aria-hidden>
                 ·
               </span>
-              <Link
-                href={item.entryHref}
-                className="font-medium text-wiki-link hover:underline"
-              >
-                {item.entryName}
-              </Link>
-              <span className="min-w-0 text-muted-foreground">
-                （{item.message}）
-              </span>
-              <span className="text-muted-foreground" aria-hidden>
-                ·
+              <span className="min-w-0 truncate">
+                <Link
+                  href={item.entryHref}
+                  className="font-medium text-wiki-link hover:underline"
+                >
+                  {item.entryName}
+                </Link>
+                <span className="text-muted-foreground">
+                  （{item.message}）
+                </span>
               </span>
               <Link
                 href={`/user/${item.contributorId}`}
-                className="shrink-0 text-wiki-link hover:underline"
+                className="ml-auto shrink-0 text-wiki-link hover:underline"
               >
                 {item.contributorName}
               </Link>
