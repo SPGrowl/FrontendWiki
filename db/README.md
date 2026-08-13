@@ -56,6 +56,8 @@ npm run db:check
 | `entry_versions` | 版本快照（append-only） |
 | `entry_slug_redirects` | slug 重定向 |
 | `entry_drafts` | 用户私有草稿（每词条可多条） |
+| `entry_comments` | 词条讨论 |
+| `media_assets` | 上传图片元数据（文件在 `storage/uploads/`） |
 
 ### 已有库迁移（blog slug 命名空间）
 
@@ -64,6 +66,25 @@ npm run db:check
 ```bash
 psql -U postgres -d frontend_wiki -f db/migrate-blog-slug-namespace.sql
 ```
+
+### 已有库迁移（媒体图库）
+
+```bash
+psql -U postgres -d frontend_wiki -f db/migrate-media-assets.sql
+```
+
+或重新执行 `npm run db:init`（`init.sql` 已含该表，幂等）。
+
+## 媒体上传 API（摘要）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `POST` | `/api/uploads` | multipart：`file` + `purpose=avatar\|entry`；可选 `title`、`setAsAvatar` |
+| `GET` | `/api/media` | 图库列表：`purpose` / `uploaderId` / `q` / `offset` / `limit` |
+| `PATCH` | `/api/media/:id` | 改 `title`（上传者或 admin） |
+| `DELETE` | `/api/media/:id` | 删记录与文件（上传者或 admin） |
+| `GET` | `/uploads/...` | 读取已上传文件 |
+| `GET/PATCH` | `/api/me` | 当前用户；`PATCH` 可设 `avatar` 为本站 `/uploads/avatar/...` |
 
 ## 代码中使用
 

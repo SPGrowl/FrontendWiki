@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/wiki/user/user-avatar";
 import { logout } from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 import type { User } from "@/type/user";
@@ -74,21 +75,7 @@ export function UserMenu({ user }: UserMenuProps) {
           setError(null);
         }}
       >
-        {user.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatar}
-            alt=""
-            className="size-6 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden
-            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold uppercase"
-          >
-            {user.name.slice(0, 1)}
-          </span>
-        )}
+        <UserAvatar name={user.name} avatar={user.avatar} size="sm" />
         <span className="truncate">{user.name}</span>
         <CaretDownIcon
           className={cn(

@@ -76,3 +76,17 @@ export async function createUser(input: CreateUserInput): Promise<User> {
 
   return mapUser(rows[0]);
 }
+
+export async function updateUserAvatar(
+  userId: string,
+  avatar: string
+): Promise<User | null> {
+  const { rows } = await query<UserRow>(
+    `UPDATE users
+     SET avatar = $2
+     WHERE id = $1
+     RETURNING ${USER_COLUMNS}`,
+    [userId, avatar]
+  );
+  return rows[0] ? mapUser(rows[0]) : null;
+}

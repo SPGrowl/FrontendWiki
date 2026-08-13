@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { EntryToolbar } from "@/components/wiki/entry/EntryToolbar";
+import { UserAvatar } from "@/components/wiki/user/user-avatar";
 import {
   buildEntryDiffHref,
   buildEntryDiscussHref,
@@ -128,8 +129,13 @@ export function EntryHistoryView({ data }: EntryHistoryViewProps) {
 
                   <Link
                     href={`/user/${version.contributorId}`}
-                    className="shrink-0 text-wiki-link hover:underline"
+                    className="inline-flex shrink-0 items-center gap-1.5 text-wiki-link hover:underline"
                   >
+                    <UserAvatar
+                      name={version.contributorName}
+                      avatar={version.contributorAvatar}
+                      size="xs"
+                    />
                     {version.contributorName}
                   </Link>
 

@@ -31,6 +31,10 @@ yarn-error.log*
 # env files
 .env*
 
+# local upload binaries (keep storage/uploads/.gitignore tracked)
+/storage/uploads/**
+!/storage/uploads/.gitignore
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

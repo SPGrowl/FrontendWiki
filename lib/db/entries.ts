@@ -471,6 +471,7 @@ interface HistoryVersionRow {
   message: string;
   contributor_id: string;
   contributor_name: string;
+  contributor_avatar: string;
   created_at: Date;
   current_version_id: string | null;
   entry_name: string;
@@ -502,6 +503,7 @@ async function loadEntryHistoryPageData(
   const { rows } = await query<HistoryVersionRow>(
     `SELECT v.id, v.version_no, v.title, v.message, v.contributor_id,
             v.created_at, u.name AS contributor_name,
+            u.avatar AS contributor_avatar,
             e.current_version_id, e.name AS entry_name
      FROM entry_versions v
      INNER JOIN users u ON u.id = v.contributor_id
@@ -520,6 +522,7 @@ async function loadEntryHistoryPageData(
       message: row.message || "（无提交说明）",
       contributorId: row.contributor_id,
       contributorName: row.contributor_name,
+      contributorAvatar: row.contributor_avatar ?? "",
       createdAt: row.created_at.toISOString(),
       isCurrent: row.id === entry.current_version_id,
       previousVersionId: older?.id ?? null,

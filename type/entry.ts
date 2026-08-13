@@ -126,6 +126,8 @@ export interface EntryVersionListItem {
   message: string;
   contributorId: string;
   contributorName: string;
+  /** 空字符串表示无头像，前端回退占位 */
+  contributorAvatar: string;
   createdAt: string;
   isCurrent: boolean;
   /** 时间序上的上一版（更旧）；首版为 null */
@@ -206,6 +208,8 @@ export interface EntryComment {
   createdAt: string;
   authorId: string;
   authorName: string;
+  /** 空字符串表示无头像，前端回退占位 */
+  authorAvatar: string;
 }
 
 /** 讨论页读模型 */

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { WikiCard } from "@/components/wiki/card/WikiCard";
 import { EntryToolbar } from "@/components/wiki/entry/EntryToolbar";
+import { UserAvatar } from "@/components/wiki/user/user-avatar";
 import {
   createEntryComment,
   deleteEntryComment,
@@ -174,45 +175,58 @@ export function EntryDiscussView({
                 return (
                   <li
                     key={comment.id}
-                    className="group relative py-4 text-sm"
+                    className="group relative flex gap-3 py-4 text-sm"
                   >
-                    <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                      <Link
-                        href={`/user/${comment.authorId}`}
-                        className="font-medium text-wiki-link hover:underline"
-                      >
-                        {comment.authorName}
-                      </Link>
-                      <time
-                        dateTime={comment.createdAt}
-                        className="text-xs text-muted-foreground"
-                        title={new Date(comment.createdAt).toLocaleString(
-                          "zh-CN"
-                        )}
-                      >
-                        {formatRelativeTime(comment.createdAt)}
-                      </time>
-                      {isOwn ? (
-                        <button
-                          type="button"
-                          className={cn(
-                            "ml-auto text-xs text-destructive",
-                            "opacity-0 transition-opacity group-hover:opacity-100",
-                            "focus-visible:opacity-100 focus-visible:outline-none",
-                            "disabled:opacity-50"
-                          )}
-                          disabled={pending === comment.id}
-                          onClick={() => {
-                            void handleDelete(comment.id);
-                          }}
+                    <Link
+                      href={`/user/${comment.authorId}`}
+                      className="mt-0.5 shrink-0"
+                      aria-label={comment.authorName}
+                    >
+                      <UserAvatar
+                        name={comment.authorName}
+                        avatar={comment.authorAvatar}
+                        size="md"
+                      />
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <Link
+                          href={`/user/${comment.authorId}`}
+                          className="font-medium text-wiki-link hover:underline"
                         >
-                          {pending === comment.id ? "删除中…" : "删除"}
-                        </button>
-                      ) : null}
+                          {comment.authorName}
+                        </Link>
+                        <time
+                          dateTime={comment.createdAt}
+                          className="text-xs text-muted-foreground"
+                          title={new Date(comment.createdAt).toLocaleString(
+                            "zh-CN"
+                          )}
+                        >
+                          {formatRelativeTime(comment.createdAt)}
+                        </time>
+                        {isOwn ? (
+                          <button
+                            type="button"
+                            className={cn(
+                              "ml-auto text-xs text-destructive",
+                              "opacity-0 transition-opacity group-hover:opacity-100",
+                              "focus-visible:opacity-100 focus-visible:outline-none",
+                              "disabled:opacity-50"
+                            )}
+                            disabled={pending === comment.id}
+                            onClick={() => {
+                              void handleDelete(comment.id);
+                            }}
+                          >
+                            {pending === comment.id ? "删除中…" : "删除"}
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-foreground/90">
+                        {comment.content}
+                      </p>
                     </div>
-                    <p className="whitespace-pre-wrap break-words text-foreground/90">
-                      {comment.content}
-                    </p>
                   </li>
                 );
               })}

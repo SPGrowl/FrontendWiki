@@ -20,3 +20,9 @@ export type {
   BreadcrumbItem,
   EntryView,
 } from "@/type/entry";
+
+export type {
+  MediaPurpose,
+  MediaUploader,
+  MediaAsset,
+} from "@/type/media";

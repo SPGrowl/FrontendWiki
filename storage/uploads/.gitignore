@@ -1,0 +1,3 @@
+# Keep directory in git; uploaded binaries stay ignored via /storage/
+*
+!.gitignore

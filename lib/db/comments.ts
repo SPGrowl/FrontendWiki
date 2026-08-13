@@ -13,6 +13,7 @@ interface CommentRow {
   entry_id: string;
   author_id: string;
   author_name: string;
+  author_avatar: string;
   content: string;
   created_at: Date;
 }
@@ -25,6 +26,7 @@ function mapComment(row: CommentRow): EntryComment {
     createdAt: row.created_at.toISOString(),
     authorId: row.author_id,
     authorName: row.author_name,
+    authorAvatar: row.author_avatar ?? "",
   };
 }
 
@@ -35,7 +37,7 @@ export async function listCommentsByEntryId(
 
   const { rows } = await query<CommentRow>(
     `SELECT c.id, c.entry_id, c.author_id, c.content, c.created_at,
-            u.name AS author_name
+            u.name AS author_name, u.avatar AS author_avatar
      FROM entry_comments c
      INNER JOIN users u ON u.id = c.author_id
      WHERE c.entry_id = $1
@@ -76,7 +78,7 @@ export async function createComment(input: {
        RETURNING id, entry_id, author_id, content, created_at
      )
      SELECT i.id, i.entry_id, i.author_id, i.content, i.created_at,
-            u.name AS author_name
+            u.name AS author_name, u.avatar AS author_avatar
      FROM inserted i
      INNER JOIN users u ON u.id = i.author_id`,
     [input.entryId, input.authorId, input.content]
@@ -92,7 +94,7 @@ export async function findCommentById(
 
   const { rows } = await query<CommentRow>(
     `SELECT c.id, c.entry_id, c.author_id, c.content, c.created_at,
-            u.name AS author_name
+            u.name AS author_name, u.avatar AS author_avatar
      FROM entry_comments c
      INNER JOIN users u ON u.id = c.author_id
      WHERE c.id = $1

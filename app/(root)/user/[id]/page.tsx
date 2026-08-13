@@ -1,6 +1,8 @@
 import { UserBlogList } from "@/components/wiki/user/UserBlogList";
 import { UserContributionList } from "@/components/wiki/user/UserContributionList";
 import { UserDraftList } from "@/components/wiki/drafts/user-draft-list";
+import { AvatarUploader } from "@/components/wiki/user/avatar-uploader";
+import { UserAvatar } from "@/components/wiki/user/user-avatar";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import {
   listUserBlogs,
@@ -34,28 +36,20 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6 md:p-8">
       <div className="flex items-start gap-4">
-        {user.avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatar}
-            alt=""
-            className="size-16 rounded-full object-cover"
-          />
+        {isSelf ? (
+          <AvatarUploader name={user.name} avatar={user.avatar} />
         ) : (
-          <span
-            aria-hidden
-            className="flex size-16 items-center justify-center rounded-full bg-muted text-xl font-semibold uppercase"
-          >
-            {user.name.slice(0, 1)}
-          </span>
+          <UserAvatar name={user.name} avatar={user.avatar} size="xl" />
         )}
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pt-1">
           <h1 className="truncate text-xl font-semibold tracking-tight">
             {user.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isSelf ? "这是你的个人主页" : "用户主页"}
+            {isSelf
+              ? "这是你的个人主页 · 悬停头像可更换"
+              : "用户主页"}
           </p>
         </div>
       </div>
