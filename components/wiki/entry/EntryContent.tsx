@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import { MarkdownCodeBlock } from "@/components/wiki/entry/markdown-code-block";
+import { MarkdownImage } from "@/components/wiki/entry/markdown-image";
 import { MarkdownLink } from "@/components/wiki/entry/markdown-link";
 
 interface EntryContentProps {
@@ -26,6 +27,7 @@ function extractText(node: ReactNode): string {
 
 const markdownComponents = {
   a: MarkdownLink,
+  img: MarkdownImage,
   pre({ children }: ComponentProps<"pre">) {
     return <>{children}</>;
   },

@@ -1,12 +1,18 @@
 "use client";
 
 import { MergeView } from "@codemirror/merge";
-import { useEffect, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import {
   createEditableMarkdownEditorExtensions,
   createReadOnlyMarkdownEditorExtensions,
 } from "@/lib/wiki/codemirror/markdown-extensions";
 import { cn } from "@/lib/utils";
+import type { MarkdownEditorHandle } from "@/components/wiki/editor/markdown-editor";
 
 interface MarkdownMergeEditorProps {
   baseline: string;
@@ -18,21 +24,46 @@ interface MarkdownMergeEditorProps {
   className?: string;
 }
 
-export function MarkdownMergeEditor({
-  baseline,
-  value,
-  onChange,
-  disabled = false,
-  baselineLabel = "现版本",
-  editLabel = "编辑中",
-  className,
-}: MarkdownMergeEditorProps) {
+export const MarkdownMergeEditor = forwardRef<
+  MarkdownEditorHandle,
+  MarkdownMergeEditorProps
+>(function MarkdownMergeEditor(
+  {
+    baseline,
+    value,
+    onChange,
+    disabled = false,
+    baselineLabel = "现版本",
+    editLabel = "编辑中",
+    className,
+  },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mergeRef = useRef<MergeView | null>(null);
   const onChangeRef = useRef(onChange);
   const syncingRef = useRef(false);
 
   onChangeRef.current = onChange;
+
+  useImperativeHandle(ref, () => ({
+    insertAtCursor(text: string) {
+      const merge = mergeRef.current;
+      if (!merge || disabled) return;
+
+      const view = merge.b;
+      const { from, to } = view.state.selection.main;
+      view.dispatch({
+        changes: { from, to, insert: text },
+        selection: { anchor: from + text.length },
+        scrollIntoView: true,
+      });
+      view.focus();
+    },
+    focus() {
+      mergeRef.current?.b.focus();
+    },
+  }));
 
   useEffect(() => {
     const parent = containerRef.current;
@@ -117,4 +148,4 @@ export function MarkdownMergeEditor({
       />
     </div>
   );
-}
+});

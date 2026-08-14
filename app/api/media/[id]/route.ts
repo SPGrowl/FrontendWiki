@@ -7,7 +7,7 @@ import {
 } from "@/lib/db/media";
 import { findUserById, updateUserAvatar } from "@/lib/db/users";
 import { deleteUploadFile } from "@/lib/media/storage";
-import { normalizeMediaTitle } from "@/lib/media/validate-upload";
+import { normalizeRequiredMediaTitle } from "@/lib/media/validate-upload";
 import { isUuid } from "@/lib/wiki/entry-path";
 import type {
   MediaErrorResponse,
@@ -111,15 +111,15 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (!payload || !("title" in payload)) {
     return NextResponse.json<MediaErrorResponse>(
-      { error: "请提供 title" },
+      { error: "请提供说明（title）" },
       { status: 400 }
     );
   }
 
-  const title = normalizeMediaTitle(payload.title);
+  const title = normalizeRequiredMediaTitle(payload.title);
   if (title === null) {
     return NextResponse.json<MediaErrorResponse>(
-      { error: "title 无效" },
+      { error: "说明不能为空" },
       { status: 400 }
     );
   }

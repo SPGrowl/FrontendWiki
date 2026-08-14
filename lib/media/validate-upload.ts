@@ -18,6 +18,13 @@ export function normalizeMediaTitle(value: unknown): string | null {
   return trimmed;
 }
 
+/** 非空说明（相册 / entry 配图必填） */
+export function normalizeRequiredMediaTitle(value: unknown): string | null {
+  const title = normalizeMediaTitle(value);
+  if (title === null || title === "") return null;
+  return title;
+}
+
 function sniffMime(bytes: Buffer): MediaAllowedMime | null {
   if (bytes.length < 12) return null;
 
@@ -69,9 +76,17 @@ export async function validateUploadFormData(
     return { ok: false, error: "purpose 必须是 avatar 或 entry" };
   }
 
-  const title = normalizeMediaTitle(formData.get("title"));
-  if (title === null) {
-    return { ok: false, error: "title 无效" };
+  const titleRaw = normalizeMediaTitle(formData.get("title"));
+  if (titleRaw === null) {
+    return { ok: false, error: "说明无效" };
+  }
+
+  // entry 配图必须带可检索说明；avatar 可用文件名兜底
+  let title = titleRaw;
+  if (purpose === "entry") {
+    if (!title) {
+      return { ok: false, error: "上传配图时必须填写说明（message）" };
+    }
   }
 
   const file = formData.get("file");
@@ -105,13 +120,19 @@ export async function validateUploadFormData(
     return { ok: false, error: "文件类型与内容不符" };
   }
 
+  if (purpose === "avatar" && !title) {
+    title = file.name
+      ? file.name.replace(/\.[^.]+$/, "").slice(0, MEDIA_TITLE_MAX)
+      : "";
+  }
+
   return {
     ok: true,
     value: {
       purpose,
       mime: sniffed,
       bytes: buffer,
-      title: title || (file.name ? file.name.replace(/\.[^.]+$/, "").slice(0, MEDIA_TITLE_MAX) : ""),
+      title,
       maxBytes,
     },
   };

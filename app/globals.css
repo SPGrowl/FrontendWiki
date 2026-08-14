@@ -268,6 +268,24 @@
     @apply rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem];
   }
 
+  /* 正文图片：独占一行、居中、默认不占满栏宽；#scale=n 时按百分比等比缩放
+     结构为 span（非 figure），以便可合法出现在 react-markdown 的 <p> 内 */
+  .wiki-prose :where(.wiki-md-figure) {
+    @apply my-4 block text-center;
+  }
+
+  .wiki-prose :where(.wiki-md-image) {
+    @apply mx-auto block h-auto max-w-[min(100%,32rem)];
+  }
+
+  .wiki-prose :where(.wiki-md-image--scaled) {
+    @apply max-w-full;
+  }
+
+  .wiki-prose :where(.wiki-md-figcaption) {
+    @apply mt-1.5 block text-xs text-muted-foreground;
+  }
+
   /* 块级代码由 MarkdownCodeBlock 接管，避免与工具条双重边距 */
   .wiki-prose :where(.wiki-code-block) pre,
   .wiki-prose :where(.wiki-code-block) code {

@@ -49,9 +49,14 @@ export async function listMedia(
 export async function uploadMedia(input: {
   file: File;
   purpose: MediaPurpose;
+  /** entry 必填；avatar 可选 */
   title?: string;
   setAsAvatar?: boolean;
 }): Promise<MediaUploadResponse> {
+  if (input.purpose === "entry" && !input.title?.trim()) {
+    throw new Error("上传配图时必须填写说明（message）");
+  }
+
   const fd = new FormData();
   fd.append("file", input.file);
   fd.append("purpose", input.purpose);

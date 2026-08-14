@@ -2,13 +2,26 @@
 
 import CodeMirror from "@uiw/react-codemirror";
 import { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createMarkdownEditorExtensions } from "@/lib/wiki/codemirror/markdown-extensions";
 import {
   clampEditorHeightPx,
   resolveEditorHeightBoundsPx,
 } from "@/lib/wiki/codemirror/editor-height";
 import { cn } from "@/lib/utils";
+
+export interface MarkdownEditorHandle {
+  insertAtCursor: (text: string) => void;
+  focus: () => void;
+}
 
 interface MarkdownEditorProps {
   id?: string;
@@ -23,18 +36,24 @@ interface MarkdownEditorProps {
   onHeightChange?: (heightPx: number) => void;
 }
 
-export function MarkdownEditor({
-  id,
-  value,
-  onChange,
-  placeholder = "在此编写 Markdown 正文…",
-  disabled = false,
-  className,
-  minHeight = "24rem",
-  maxHeight = "125vh",
-  adaptiveHeight = false,
-  onHeightChange,
-}: MarkdownEditorProps) {
+export const MarkdownEditor = forwardRef<
+  MarkdownEditorHandle,
+  MarkdownEditorProps
+>(function MarkdownEditor(
+  {
+    id,
+    value,
+    onChange,
+    placeholder = "在此编写 Markdown 正文…",
+    disabled = false,
+    className,
+    minHeight = "24rem",
+    maxHeight = "125vh",
+    adaptiveHeight = false,
+    onHeightChange,
+  },
+  ref
+) {
   const viewRef = useRef<EditorView | null>(null);
   const [heightPx, setHeightPx] = useState<number | null>(null);
 
@@ -51,6 +70,24 @@ export function MarkdownEditor({
     },
     [maxHeight, minHeight, onHeightChange]
   );
+
+  useImperativeHandle(ref, () => ({
+    insertAtCursor(text: string) {
+      const view = viewRef.current;
+      if (!view || disabled) return;
+
+      const { from, to } = view.state.selection.main;
+      view.dispatch({
+        changes: { from, to, insert: text },
+        selection: { anchor: from + text.length },
+        scrollIntoView: true,
+      });
+      view.focus();
+    },
+    focus() {
+      viewRef.current?.focus();
+    },
+  }));
 
   useEffect(() => {
     if (!adaptiveHeight) return;
@@ -120,4 +157,4 @@ export function MarkdownEditor({
       />
     </div>
   );
-}
+});

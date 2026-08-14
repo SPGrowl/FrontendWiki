@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { ImageIcon } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 import {
   EditorViewModeToggle,
   type EditorViewMode,
 } from "@/components/wiki/editor/editor-view-mode-toggle";
 import { EntryEditorPreviewPanel } from "@/components/wiki/editor/entry-editor-preview-panel";
-import { MarkdownEditor } from "@/components/wiki/editor/markdown-editor";
+import { ImageAssetPicker } from "@/components/wiki/editor/image-asset-picker";
+import {
+  MarkdownEditor,
+  type MarkdownEditorHandle,
+} from "@/components/wiki/editor/markdown-editor";
 import { MarkdownMergeEditor } from "@/components/wiki/editor/markdown-merge-editor";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +39,32 @@ export function EntryEditorWorkspace({
   className,
 }: EntryEditorWorkspaceProps) {
   const [viewMode, setViewMode] = useState<EditorViewMode>("source");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const editorRef = useRef<MarkdownEditorHandle>(null);
   const isDiffMode = baselineContent !== undefined;
+
+  function handleInsertMarkdown(markdown: string) {
+    editorRef.current?.insertAtCursor(markdown);
+  }
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          size="xs"
+          variant="outline"
+          disabled={disabled || viewMode !== "source"}
+          title={
+            viewMode !== "source"
+              ? "请切换到编辑模式后再插入图片"
+              : "打开图库选择图片"
+          }
+          onClick={() => setPickerOpen(true)}
+        >
+          <ImageIcon className="size-3.5" aria-hidden />
+          插入图片
+        </Button>
         <EditorViewModeToggle
           value={viewMode}
           onChange={setViewMode}
@@ -48,6 +75,7 @@ export function EntryEditorWorkspace({
       {viewMode === "source" ? (
         isDiffMode ? (
           <MarkdownMergeEditor
+            ref={editorRef}
             baseline={baselineContent}
             value={content}
             onChange={onChange}
@@ -59,6 +87,7 @@ export function EntryEditorWorkspace({
               {contentLabel}
             </label>
             <MarkdownEditor
+              ref={editorRef}
               id={contentId}
               value={content}
               onChange={onChange}
@@ -76,6 +105,13 @@ export function EntryEditorWorkspace({
       ) : (
         <EntryEditorPreviewPanel label={previewLabel} content={content} />
       )}
+
+      <ImageAssetPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        disabled={disabled}
+        onInsert={handleInsertMarkdown}
+      />
     </div>
   );
 }
