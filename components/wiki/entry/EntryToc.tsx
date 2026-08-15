@@ -30,6 +30,7 @@ export function EntryToc({ headings }: EntryTocProps) {
       { rootMargin: "-20% 0px -70% 0px", threshold: 0 }
     );
 
+    // 遍历所有标题，并观察它们是否在视窗中
     for (const { id } of headings) {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
@@ -53,6 +54,7 @@ export function EntryToc({ headings }: EntryTocProps) {
             href={`#${id}`}
             onClick={(event) => {
               event.preventDefault();
+              // 滚动到指定标题
               document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
               setActiveId(id);
             }}

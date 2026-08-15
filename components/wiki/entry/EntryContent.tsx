@@ -54,8 +54,11 @@ export function EntryContent({ content }: EntryContentProps) {
   return (
     <div className="wiki-prose">
       <ReactMarkdown
+      // 表格、删除线、任务列表、自动链接、脚注
         remarkPlugins={[remarkGfm]}
+        // 转化为HTML语义化标签，为标题层级添加ID，便于TOC跳转
         rehypePlugins={[rehypeSlug]}
+        // 自定义Markdown组件
         components={markdownComponents}
       >
         {content}

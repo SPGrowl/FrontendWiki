@@ -19,6 +19,7 @@ function toPlainText(nodes: PhrasingContent[]): string {
       if (node.type === "image" || node.type === "imageReference") {
         return node.alt ?? "";
       }
+      // 循环子节点
       if ("children" in node) {
         return toPlainText(node.children as PhrasingContent[]);
       }
@@ -36,6 +37,7 @@ export function extractHeadings(markdown: string): TocItem[] {
     if (node.depth < 2) return;
 
     const text = toPlainText(node.children);
+    // 拼接heading
     headings.push({
       id: slugger.slug(text),
       text,

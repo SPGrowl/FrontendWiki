@@ -68,6 +68,25 @@ export function isExternalHref(href: string): boolean {
   return /^https?:\/\//i.test(href) || href.startsWith("//");
 }
 
+/**
+ * 正文站内词条：必须已是 `/entry/{...}`，可选 `#锚点`。
+ * 不补斜杠、不去尾斜杠、不剥 query；不合规则返回 null。
+ */
+export function splitCanonicalEntryHref(
+  href: string
+): { path: string; hash: string } | null {
+  if (!href.startsWith(`${ENTRY_PREFIX}/`)) return null;
+
+  const hashIndex = href.indexOf("#");
+  const path = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+  const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
+
+  if (path.length <= ENTRY_PREFIX.length + 1) return null;
+  if (path.includes("?")) return null;
+
+  return { path, hash };
+}
+
 /** 是否为站内词条 href（允许省略前导 `/`） */
 export function isInternalEntryHref(href: string): boolean {
   const trimmed = href.trim();

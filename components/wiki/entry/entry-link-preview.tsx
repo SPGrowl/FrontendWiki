@@ -12,7 +12,6 @@ import {
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { fetchEntryPreview } from "@/lib/api/entries";
-import { normalizeInternalEntryHref } from "@/lib/wiki/entry-slug";
 import { cn } from "@/lib/utils";
 import type { EntryPreviewData } from "@/type/entry-api";
 
@@ -66,7 +65,6 @@ export function EntryLinkPreview({
   className,
   children,
 }: EntryLinkPreviewProps) {
-  const normalized = normalizeInternalEntryHref(href) ?? href;
   const tooltipId = useId();
   const anchorRef = useRef<HTMLAnchorElement>(null);
   const openTimer = useRef<number | null>(null);
@@ -96,7 +94,7 @@ export function EntryLinkPreview({
   }, []);
 
   const loadPreview = useCallback(async () => {
-    const cached = previewCache.get(normalized);
+    const cached = previewCache.get(href);
     if (cached) {
       if (cached.status === "ok") {
         setPreview(cached.data);
@@ -111,14 +109,14 @@ export function EntryLinkPreview({
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchEntryPreview(normalized);
+      const result = await fetchEntryPreview(href);
       if (result.preview) {
-        previewCache.set(normalized, { status: "ok", data: result.preview });
+        previewCache.set(href, { status: "ok", data: result.preview });
         setPreview(result.preview);
         setError(null);
       } else {
         const message = result.error ?? "词条不存在或链接无效";
-        previewCache.set(normalized, { status: "invalid", error: message });
+        previewCache.set(href, { status: "invalid", error: message });
         setPreview(null);
         setError(message);
       }
@@ -128,7 +126,7 @@ export function EntryLinkPreview({
     } finally {
       setLoading(false);
     }
-  }, [normalized]);
+  }, [href]);
 
   const scheduleOpen = useCallback(() => {
     clearTimers();
@@ -228,7 +226,7 @@ export function EntryLinkPreview({
     <>
       <Link
         ref={anchorRef}
-        href={normalized}
+        href={href}
         className={className}
         aria-describedby={open ? tooltipId : undefined}
         onPointerEnter={scheduleOpen}

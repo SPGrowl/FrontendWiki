@@ -5,10 +5,23 @@ import type { ComponentProps } from "react";
 import { EntryLinkPreview } from "@/components/wiki/entry/entry-link-preview";
 import {
   isExternalHref,
-  isInternalEntryHref,
-  normalizeInternalEntryHref,
+  splitCanonicalEntryHref,
 } from "@/lib/wiki/entry-slug";
 import { cn } from "@/lib/utils";
+
+function InvalidLink({
+  className,
+  children,
+}: {
+  className: string;
+  children: ComponentProps<"a">["children"];
+}) {
+  return (
+    <span className={cn(className, "cursor-not-allowed opacity-70")}>
+      {children}
+    </span>
+  );
+}
 
 export function MarkdownLink({
   href,
@@ -19,11 +32,7 @@ export function MarkdownLink({
   const linkClassName = cn("wiki-link", className);
 
   if (!href) {
-    return (
-      <a className={linkClassName} {...props}>
-        {children}
-      </a>
-    );
+    return <InvalidLink className={linkClassName}>{children}</InvalidLink>;
   }
 
   if (href.startsWith("#")) {
@@ -34,31 +43,18 @@ export function MarkdownLink({
     );
   }
 
-  if (isInternalEntryHref(href)) {
-    const normalized = normalizeInternalEntryHref(href);
-    if (!normalized) {
+  const entry = splitCanonicalEntryHref(href);
+  if (entry) {
+    if (entry.hash) {
       return (
-        <span className={cn(linkClassName, "cursor-not-allowed opacity-70")}>
-          {children}
-        </span>
-      );
-    }
-
-    const hashIndex = href.indexOf("#");
-    const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
-    const fullHref = `${normalized}${hash}`;
-
-    // 带页内锚点时仍可跳转；预览按词条 path（无 hash）拉取
-    if (hash) {
-      return (
-        <Link href={fullHref} className={linkClassName}>
+        <Link href={`${entry.path}${entry.hash}`} className={linkClassName}>
           {children}
         </Link>
       );
     }
 
     return (
-      <EntryLinkPreview href={normalized} className={linkClassName}>
+      <EntryLinkPreview href={entry.path} className={linkClassName}>
         {children}
       </EntryLinkPreview>
     );
@@ -78,9 +74,5 @@ export function MarkdownLink({
     );
   }
 
-  return (
-    <a href={href} className={linkClassName} {...props}>
-      {children}
-    </a>
-  );
+  return <InvalidLink className={linkClassName}>{children}</InvalidLink>;
 }
