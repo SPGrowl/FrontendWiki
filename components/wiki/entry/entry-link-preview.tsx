@@ -12,7 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { fetchEntryPreview } from "@/lib/api/entries";
-import { normalizeInternalEntryHref } from "@/lib/wiki/resolve-entry-link";
+import { normalizeInternalEntryHref } from "@/lib/wiki/entry-slug";
 import { cn } from "@/lib/utils";
 import type { EntryPreviewData } from "@/type/entry-api";
 

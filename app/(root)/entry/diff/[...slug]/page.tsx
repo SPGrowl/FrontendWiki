@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EntryDiffView } from "@/components/wiki/entry/EntryDiffView";
 import { getEntryDiffPageDataBySegments } from "@/lib/db/entries";
+import { hrefFromEntryParams } from "@/lib/wiki/entry-slug";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
@@ -10,8 +11,9 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const historyHint = slug[slug.length - 1] ?? "词条";
-  return { title: `版本对比：${decodeURIComponent(historyHint)}` };
+  const href = hrefFromEntryParams(slug);
+  const leaf = href?.split("/").pop() ?? "词条";
+  return { title: `版本对比：${leaf}` };
 }
 
 export default async function EntryDiffPage({ params, searchParams }: Props) {

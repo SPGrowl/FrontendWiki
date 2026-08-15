@@ -15,7 +15,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- JavaScript 词条
 INSERT INTO entries (
-  id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
+  id, type, parent_id, slug, name, href, status, creator_id, created_at, updated_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000010',
@@ -23,6 +23,7 @@ VALUES (
   NULL,
   'javascript',
   'JavaScript',
+  '/entry/javascript',
   'published',
   '00000000-0000-0000-0000-000000000001',
   NOW(),
@@ -65,7 +66,7 @@ WHERE id = '00000000-0000-0000-0000-000000000010'
 
 -- TypeScript（与 JavaScript 同级）
 INSERT INTO entries (
-  id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
+  id, type, parent_id, slug, name, href, status, creator_id, created_at, updated_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000012',
@@ -73,6 +74,7 @@ VALUES (
   NULL,
   'typescript',
   'TypeScript',
+  '/entry/typescript',
   'published',
   '00000000-0000-0000-0000-000000000001',
   NOW(),
@@ -106,7 +108,7 @@ WHERE id = '00000000-0000-0000-0000-000000000012'
 
 -- ECMAScript（JavaScript 子级）
 INSERT INTO entries (
-  id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
+  id, type, parent_id, slug, name, href, status, creator_id, created_at, updated_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000014',
@@ -114,6 +116,7 @@ VALUES (
   '00000000-0000-0000-0000-000000000010',
   'ecmascript',
   'ECMAScript',
+  '/entry/javascript/ecmascript',
   'published',
   '00000000-0000-0000-0000-000000000001',
   NOW(),
@@ -147,7 +150,7 @@ WHERE id = '00000000-0000-0000-0000-000000000014'
 
 -- Node.js（JavaScript 子级）
 INSERT INTO entries (
-  id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
+  id, type, parent_id, slug, name, href, status, creator_id, created_at, updated_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000016',
@@ -155,6 +158,7 @@ VALUES (
   '00000000-0000-0000-0000-000000000010',
   'node-js',
   'Node.js',
+  '/entry/javascript/node-js',
   'published',
   '00000000-0000-0000-0000-000000000001',
   NOW(),
@@ -188,7 +192,7 @@ WHERE id = '00000000-0000-0000-0000-000000000016'
 
 -- React 19 词条（blog）→ 阅读路径 /entry/blog/react-19-release
 INSERT INTO entries (
-  id, type, parent_id, slug, name, status, creator_id, created_at, updated_at
+  id, type, parent_id, slug, name, href, status, creator_id, created_at, updated_at
 )
 VALUES (
   '00000000-0000-0000-0000-000000000020',
@@ -196,6 +200,7 @@ VALUES (
   NULL,
   'react-19-release',
   'React 19 正式版发布',
+  '/entry/blog/react-19-release',
   'published',
   '00000000-0000-0000-0000-000000000001',
   NOW(),
@@ -228,5 +233,12 @@ SET current_version_id = '00000000-0000-0000-0000-000000000021',
     updated_at = NOW()
 WHERE id = '00000000-0000-0000-0000-000000000020'
   AND current_version_id IS NULL;
+
+-- 旧种子行补全 href（ON CONFLICT 跳过插入时）
+UPDATE entries SET href = '/entry/javascript' WHERE id = '00000000-0000-0000-0000-000000000010' AND (href IS NULL OR href = '');
+UPDATE entries SET href = '/entry/typescript' WHERE id = '00000000-0000-0000-0000-000000000012' AND (href IS NULL OR href = '');
+UPDATE entries SET href = '/entry/javascript/ecmascript' WHERE id = '00000000-0000-0000-0000-000000000014' AND (href IS NULL OR href = '');
+UPDATE entries SET href = '/entry/javascript/node-js' WHERE id = '00000000-0000-0000-0000-000000000016' AND (href IS NULL OR href = '');
+UPDATE entries SET href = '/entry/blog/react-19-release' WHERE id = '00000000-0000-0000-0000-000000000020' AND (href IS NULL OR href = '');
 
 COMMIT;

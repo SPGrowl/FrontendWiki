@@ -7,8 +7,10 @@ import { findDraftById } from "@/lib/db/drafts";
 import {
   findEntrySearchItem,
   getEntryEditPageData,
-  getEntryPageDataBySegments,
+  getEntryPageDataByHref,
 } from "@/lib/db/entries";
+import { buildEntryEditHref } from "@/lib/wiki/entry-path";
+import { hrefFromEntryParams } from "@/lib/wiki/entry-slug";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
@@ -17,21 +19,25 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const entry = await getEntryPageDataBySegments(slug);
+  const href = hrefFromEntryParams(slug);
+  const entry = href ? await getEntryPageDataByHref(href) : null;
   return { title: entry ? `编辑：${entry.title}` : "编辑词条" };
 }
 
 export default async function EditEntryPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { draft: draftId } = await searchParams;
-  const editPath = `/entry/edit/${slug.map(encodeURIComponent).join("/")}`;
+  const href = hrefFromEntryParams(slug);
+  if (!href) notFound();
+
+  const editPath = buildEntryEditHref(href);
 
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/auth/login?next=${encodeURIComponent(editPath)}`);
   }
 
-  const entry = await getEntryPageDataBySegments(slug);
+  const entry = await getEntryPageDataByHref(href);
   if (!entry) notFound();
 
   const editData = await getEntryEditPageData(entry.id);

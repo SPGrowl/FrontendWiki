@@ -3,7 +3,7 @@ import { getEntryPreviewByHref } from "@/lib/db/entries";
 import {
   isInternalEntryHref,
   normalizeInternalEntryHref,
-} from "@/lib/wiki/resolve-entry-link";
+} from "@/lib/wiki/entry-slug";
 import type {
   EntryErrorResponse,
   EntryPreviewResponse,
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 
   const normalized = normalizeInternalEntryHref(href);
-  if (!normalized || normalized === "/entry") {
+  if (!normalized) {
     return NextResponse.json<EntryPreviewResponse>({
       preview: null,
       error: "链接不完整或无效",

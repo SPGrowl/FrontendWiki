@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createDraft, updateDraft } from "@/lib/api/drafts";
 import { createEntry } from "@/lib/api/entries";
-import { BLOG_SEGMENT, buildCreatePreview } from "@/lib/wiki/entry-path";
 import {
-  canUseNameAsSlug,
+  BLOG_SLUG,
+  buildPreviewHref,
   resolveEntrySlug,
   validateSlug,
 } from "@/lib/wiki/entry-slug";
@@ -58,7 +58,7 @@ export function EntryEditor({
   const trimmedMessage = message.trim();
 
   const nameSlugCheck = useMemo(
-    () => (trimmedTitle ? canUseNameAsSlug(trimmedTitle) : null),
+    () => (trimmedTitle ? validateSlug(trimmedTitle) : null),
     [trimmedTitle]
   );
 
@@ -95,15 +95,14 @@ export function EntryEditor({
     return validateSlug(trimmedCustomSlug);
   }, [needsCustomSlug, trimmedCustomSlug]);
 
-  const pathPreview = useMemo(
+  const pathPreviewHref = useMemo(
     () =>
-      buildCreatePreview(
-        entryType,
-        parent,
-        trimmedTitle || "未命名词条",
-        effectiveSlug ?? undefined
+      buildPreviewHref(
+        entryType === "blog" ? null : (parent?.href ?? null),
+        effectiveSlug ?? "…",
+        entryType
       ),
-    [entryType, parent, trimmedTitle, effectiveSlug]
+    [entryType, parent?.href, effectiveSlug]
   );
 
   const canSubmit =
@@ -299,16 +298,13 @@ export function EntryEditor({
               <span className="text-xs font-medium">发布位置</span>
               <p className="rounded-none border border-border bg-muted/30 px-2.5 py-2 text-xs text-muted-foreground">
                 固定前缀{" "}
-                <code className="text-foreground">/entry/{BLOG_SEGMENT}/</code>
+                <code className="text-foreground">/entry/{BLOG_SLUG}/</code>
                 ，别名由标题或 URL 别名决定
               </p>
             </div>
           )}
 
-          <EntryPathPreview
-            breadcrumbs={pathPreview.breadcrumbs}
-            href={pathPreview.href}
-          />
+          <EntryPathPreview href={pathPreviewHref} />
         </div>
 
         <EntryEditorWorkspace

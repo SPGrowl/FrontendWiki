@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS entries (
   parent_id           UUID REFERENCES entries (id) ON DELETE SET NULL,
   slug                TEXT NOT NULL,
   name                TEXT NOT NULL,
+  /** 规范阅读路径，如 /entry/js 或 /entry/blog/foo；全局唯一，供直查 */
+  href                TEXT NOT NULL,
   status              TEXT NOT NULL DEFAULT 'published'
                       CHECK (status IN ('published', 'archived')),
   current_version_id  UUID,
@@ -54,6 +56,43 @@ CREATE TABLE IF NOT EXISTS entries (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- 已有库升级：补 href 列并回填（新库 CREATE 已含该列，ADD 为 no-op）
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS href TEXT;
+
+WITH RECURSIVE paths AS (
+  SELECT
+    id,
+    CASE
+      WHEN type = 'blog' THEN '/entry/blog/' || slug
+      ELSE '/entry/' || slug
+    END AS href
+  FROM entries
+  WHERE parent_id IS NULL
+  UNION ALL
+  SELECT
+    e.id,
+    p.href || '/' || e.slug
+  FROM entries e
+  INNER JOIN paths p ON e.parent_id = p.id
+)
+UPDATE entries e
+SET href = paths.href
+FROM paths
+WHERE e.id = paths.id
+  AND (e.href IS NULL OR e.href = '');
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'entries' AND column_name = 'href' AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE entries ALTER COLUMN href SET NOT NULL;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS entries_href_unique ON entries (href);
 
 -- 旧索引：根级 slug 曾跨 common/blog 共用，拆分后删除
 DROP INDEX IF EXISTS entries_root_slug_unique;

@@ -41,7 +41,7 @@ export function EntryBreadcrumb({ items, className }: EntryBreadcrumbProps) {
           const isLast = index === items.length - 1;
 
           return (
-            <li key={item.id} className="flex shrink-0 items-center gap-1">
+            <li key={item.href} className="flex shrink-0 items-center gap-1">
               {index > 0 ? (
                 <CaretRightIcon
                   className="size-3 shrink-0 text-muted-foreground/70"

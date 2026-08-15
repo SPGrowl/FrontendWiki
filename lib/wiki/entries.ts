@@ -1,4 +1,4 @@
-import { getEntryPageDataBySegments } from "@/lib/db/entries";
+import { getEntryPageDataByParams } from "@/lib/db/entries";
 
 export interface WikiEntryData {
   id: string;
@@ -6,9 +6,9 @@ export interface WikiEntryData {
   content: string;
 }
 
-/** @deprecated 优先使用 getEntryPageDataBySegments */
+/** @deprecated 优先使用 getEntryPageDataByHref / getEntryPageDataByParams */
 export async function getEntryById(id: string): Promise<WikiEntryData | null> {
-  const entry = await getEntryPageDataBySegments([id]);
+  const entry = await getEntryPageDataByParams([id]);
   if (!entry) return null;
   return { id: entry.id, title: entry.title, content: entry.content };
 }

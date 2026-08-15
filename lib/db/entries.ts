@@ -5,18 +5,19 @@ import { extractHeadings } from "@/lib/wiki/extract-headings";
 import { buildEntryExcerpt } from "@/lib/wiki/entry-excerpt";
 import {
   buildBreadcrumbs,
-  buildBlogEntryHref,
   buildCommonEntryHref,
   buildEntryHref,
   buildEntryHistoryHref,
   isUuid,
-  type EntryPathSegment,
+  resolveEntryHref,
+  type EntryPathNode,
 } from "@/lib/wiki/entry-path";
-import { normalizePathSegment, resolveEntrySlug, validateSlug } from "@/lib/wiki/entry-slug";
 import {
-  entryHrefToSegments,
+  hrefFromEntryParams,
   normalizeInternalEntryHref,
-} from "@/lib/wiki/resolve-entry-link";
+  resolveEntrySlug,
+  validateSlug,
+} from "@/lib/wiki/entry-slug";
 import type {
   BreadcrumbItem,
   Contributor,
@@ -48,11 +49,21 @@ interface EntryRow {
   parent_id: string | null;
   slug: string;
   name: string;
+  href: string;
   status: Entry["status"];
   current_version_id: string | null;
   creator_id: string;
   created_at: Date;
   updated_at: Date;
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "23505"
+  );
 }
 
 interface EntryVersionRow {
@@ -82,6 +93,7 @@ function mapEntry(row: EntryRow): Entry {
     parentId: row.parent_id,
     slug: row.slug,
     name: row.name,
+    href: row.href,
     status: row.status,
     currentVersionId: row.current_version_id ?? "",
     creatorId: row.creator_id,
@@ -103,7 +115,7 @@ function mapEntryVersion(row: EntryVersionRow): EntryVersion {
   };
 }
 
-function mapChain(rows: ChainRow[]): EntryPathSegment[] {
+function mapChain(rows: ChainRow[]): EntryPathNode[] {
   return rows
     .sort((a, b) => b.depth - a.depth)
     .map((row) => ({
@@ -117,7 +129,7 @@ function mapChain(rows: ChainRow[]): EntryPathSegment[] {
 async function fetchEntryChain(
   entryId: string,
   client?: PoolClient
-): Promise<EntryPathSegment[]> {
+): Promise<EntryPathNode[]> {
   const sql = `
     WITH RECURSIVE chain AS (
       SELECT id, parent_id, slug, name, type, 0 AS depth
@@ -146,10 +158,10 @@ export async function searchEntriesByName(
 ): Promise<EntrySearchItem[]> {
   const typeFilter = options?.type;
   const { rows } = await query<
-    Pick<EntryRow, "id" | "name"> & { content: string }
+    Pick<EntryRow, "id" | "name" | "href"> & { content: string }
   >(
     typeFilter
-      ? `SELECT e.id, e.name, v.content
+      ? `SELECT e.id, e.name, e.href, v.content
          FROM entries e
          INNER JOIN entry_versions v ON v.id = e.current_version_id
          WHERE e.status = 'published'
@@ -157,7 +169,7 @@ export async function searchEntriesByName(
            AND e.name ILIKE $1
          ORDER BY e.name
          LIMIT $2`
-      : `SELECT e.id, e.name, v.content
+      : `SELECT e.id, e.name, e.href, v.content
          FROM entries e
          INNER JOIN entry_versions v ON v.id = e.current_version_id
          WHERE e.status = 'published'
@@ -176,7 +188,7 @@ export async function searchEntriesByName(
     items.push({
       id: row.id,
       name: row.name,
-      href: buildEntryHref(chain),
+      href: row.href,
       breadcrumbs,
       breadcrumbPath: breadcrumbs.map((item) => item.name).join(" / "),
       excerpt: buildEntryExcerpt(row.content),
@@ -190,13 +202,7 @@ export async function searchEntriesByName(
 export async function getEntryPreviewByHref(
   href: string
 ): Promise<EntryPreviewData | null> {
-  const normalized = normalizeInternalEntryHref(href);
-  if (!normalized || normalized === "/entry") return null;
-
-  const segments = entryHrefToSegments(normalized);
-  if (!segments || segments.length === 0) return null;
-
-  const entry = await getEntryPageDataBySegments(segments);
+  const entry = await getEntryPageDataByHref(href);
   if (!entry) return null;
 
   return {
@@ -212,6 +218,7 @@ interface EntryPageRow {
   parent_id: string | null;
   slug: string;
   name: string;
+  href: string;
   title: string;
   content: string;
 }
@@ -221,17 +228,15 @@ interface RelatedEntryRow {
   slug: string;
   name: string;
   type: EntryType;
+  href: string;
 }
 
-function mapRelatedEntryRow(
-  row: RelatedEntryRow,
-  chain: EntryPathSegment[]
-): EntryLink {
+function mapRelatedEntryRow(row: RelatedEntryRow): EntryLink {
   return {
     id: row.id,
     entryId: row.id,
     name: row.name,
-    href: buildEntryHref(chain),
+    href: row.href,
   };
 }
 
@@ -239,11 +244,11 @@ async function fetchRelatedEntries(
   entryId: string,
   parentId: string | null,
   entryType: EntryType,
-  chain: EntryPathSegment[]
+  chain: EntryPathNode[]
 ): Promise<RelatedEntryies> {
   if (entryType === "blog") {
     const { rows: siblings } = await query<RelatedEntryRow>(
-      `SELECT id, slug, name, type
+      `SELECT id, slug, name, type, href
        FROM entries
        WHERE type = 'blog'
          AND parent_id IS NULL
@@ -253,12 +258,7 @@ async function fetchRelatedEntries(
 
     return {
       parentEntry: null,
-      SiblingEntry: siblings.map((row) => ({
-        id: row.id,
-        entryId: row.id,
-        name: row.name,
-        href: buildBlogEntryHref(row.slug),
-      })),
+      SiblingEntry: siblings.map(mapRelatedEntryRow),
       // 博客仅一级，不挂子词条树
       LinkedEntries: [],
     };
@@ -277,7 +277,7 @@ async function fetchRelatedEntries(
 
   const [{ rows: siblings }, { rows: children }] = await Promise.all([
     query<RelatedEntryRow>(
-      `SELECT id, slug, name, type
+      `SELECT id, slug, name, type, href
        FROM entries
        WHERE parent_id IS NOT DISTINCT FROM $1
          AND type = 'common'
@@ -286,7 +286,7 @@ async function fetchRelatedEntries(
       [parentId]
     ),
     query<RelatedEntryRow>(
-      `SELECT id, slug, name, type
+      `SELECT id, slug, name, type, href
        FROM entries
        WHERE parent_id = $1
          AND type = 'common'
@@ -296,22 +296,10 @@ async function fetchRelatedEntries(
     ),
   ]);
 
-  const ancestorChain = chain.slice(0, -1);
-
   return {
     parentEntry,
-    SiblingEntry: siblings.map((row) =>
-      mapRelatedEntryRow(row, [
-        ...ancestorChain,
-        { id: row.id, slug: row.slug, name: row.name, type: row.type },
-      ])
-    ),
-    LinkedEntries: children.map((row) =>
-      mapRelatedEntryRow(row, [
-        ...chain,
-        { id: row.id, slug: row.slug, name: row.name, type: row.type },
-      ])
-    ),
+    SiblingEntry: siblings.map(mapRelatedEntryRow),
+    LinkedEntries: children.map(mapRelatedEntryRow),
   };
 }
 
@@ -352,7 +340,7 @@ async function getEntryContributors(entryId: string): Promise<Contributor[]> {
 
 async function loadEntryPageData(entryId: string): Promise<EntryPageData | null> {
   const { rows } = await query<EntryPageRow>(
-    `SELECT e.id, e.type, e.parent_id, e.slug, e.name,
+    `SELECT e.id, e.type, e.parent_id, e.slug, e.name, e.href,
             v.title, v.content
      FROM entries e
      INNER JOIN entry_versions v ON v.id = e.current_version_id
@@ -370,66 +358,48 @@ async function loadEntryPageData(entryId: string): Promise<EntryPageData | null>
     fetchRelatedEntries(row.id, row.parent_id, row.type, chain),
     getEntryContributors(row.id),
   ]);
-  const path = buildEntryHref(chain);
 
   return {
     id: row.id,
     type: row.type,
     title: row.title,
     content: row.content,
-    path,
+    path: row.href,
     breadcrumbs,
     relatedEntries,
     contributors,
   };
 }
 
-async function findBlogEntryIdBySlug(slug: string): Promise<string | null> {
+async function findPublishedEntryIdByHref(
+  href: string
+): Promise<string | null> {
   const { rows } = await query<{ id: string }>(
     `SELECT id FROM entries
-     WHERE slug = $1
-       AND type = 'blog'
-       AND parent_id IS NULL
-       AND status = 'published'
+     WHERE href = $1 AND status = 'published'
      LIMIT 1`,
-    [slug]
+    [href]
   );
   return rows[0]?.id ?? null;
 }
 
-async function findBlogEntryIdByUuid(entryId: string): Promise<string | null> {
-  if (!isUuid(entryId)) return null;
-  const { rows } = await query<{ id: string }>(
-    `SELECT id FROM entries
-     WHERE id = $1 AND type = 'blog' AND parent_id IS NULL AND status = 'published'
+async function findRedirectEntryIdByPath(
+  oldPath: string
+): Promise<string | null> {
+  const { rows } = await query<{ entry_id: string }>(
+    `SELECT entry_id FROM entry_slug_redirects
+     WHERE old_path = $1
      LIMIT 1`,
-    [entryId]
+    [oldPath]
   );
-  return rows[0]?.id ?? null;
+  return rows[0]?.entry_id ?? null;
 }
 
-/**
- * 博客词条：/entry/blog/{slug}
- * 兼容旧 URL /entry/blog/{uuid}
- */
-export async function getBlogEntryPageData(
-  slugOrId: string
-): Promise<EntryPageData | null> {
-  const segment = normalizePathSegment(slugOrId);
-  const entryId =
-    (await findBlogEntryIdBySlug(segment)) ??
-    (await findBlogEntryIdByUuid(segment));
-  if (!entryId) return null;
-  return loadEntryPageData(entryId);
-}
-
-/** 普通词条：按 slug 路径逐级解析（不含 blog 段） */
+/** @deprecated 优先使用 getEntryPageDataByHref（按物化 href 直查） */
 export async function getCommonEntryPageData(
-  rawSlugs: string[]
+  slugs: string[]
 ): Promise<EntryPageData | null> {
-  if (rawSlugs.length === 0) return null;
-
-  const slugs = rawSlugs.map(normalizePathSegment);
+  if (slugs.length === 0) return null;
   if (slugs[0] === "blog") return null;
 
   let parentId: string | null = null;
@@ -446,22 +416,42 @@ export async function getCommonEntryPageData(
 }
 
 /**
- * 统一阅读页解析：
- * - ["blog", slug|uuid] → 博客
- * - 其他 → 普通词条树
+ * 按明文词条 href（`/entry/...`）加载阅读页数据。
+ * 优先查 entries.href；未命中再查 redirects。
  */
+export async function getEntryPageDataByHref(
+  href: string
+): Promise<EntryPageData | null> {
+  const normalized = normalizeInternalEntryHref(href);
+  if (!normalized) return null;
+
+  const byHref = await findPublishedEntryIdByHref(normalized);
+  if (byHref) return loadEntryPageData(byHref);
+
+  const byRedirect = await findRedirectEntryIdByPath(normalized);
+  if (byRedirect) {
+    return loadEntryPageData(byRedirect);
+  }
+
+  return null;
+}
+
+/**
+ * Next `params.slug` → 明文 href 再加载（catch-all 路由入口）。
+ */
+export async function getEntryPageDataByParams(
+  paramsSlug: string[]
+): Promise<EntryPageData | null> {
+  const href = hrefFromEntryParams(paramsSlug);
+  if (!href) return null;
+  return getEntryPageDataByHref(href);
+}
+
+/** @deprecated 使用 getEntryPageDataByParams */
 export async function getEntryPageDataBySegments(
   rawSlugs: string[]
 ): Promise<EntryPageData | null> {
-  if (rawSlugs.length === 0) return null;
-
-  const slugs = rawSlugs.map(normalizePathSegment);
-  if (slugs[0] === "blog") {
-    if (slugs.length !== 2) return null;
-    return getBlogEntryPageData(slugs[1]);
-  }
-
-  return getCommonEntryPageData(slugs);
+  return getEntryPageDataByParams(rawSlugs);
 }
 
 interface HistoryVersionRow {
@@ -483,10 +473,11 @@ async function loadEntryHistoryPageData(
   const { rows: entryRows } = await query<{
     id: string;
     name: string;
+    href: string;
     status: string;
     current_version_id: string | null;
   }>(
-    `SELECT id, name, status, current_version_id
+    `SELECT id, name, href, status, current_version_id
      FROM entries
      WHERE id = $1 AND status = 'published'
      LIMIT 1`,
@@ -498,7 +489,7 @@ async function loadEntryHistoryPageData(
 
   const chain = await fetchEntryChain(entry.id);
   const breadcrumbs = buildBreadcrumbs(chain);
-  const readPath = buildEntryHref(chain);
+  const readPath = entry.href;
 
   const { rows } = await query<HistoryVersionRow>(
     `SELECT v.id, v.version_no, v.title, v.message, v.contributor_id,
@@ -587,10 +578,11 @@ export async function getEntryDiffPageData(
   const { rows: entryRows } = await query<{
     id: string;
     name: string;
+    href: string;
     status: string;
     current_version_id: string | null;
   }>(
-    `SELECT id, name, status, current_version_id
+    `SELECT id, name, href, status, current_version_id
      FROM entries
      WHERE id = $1 AND status = 'published'
      LIMIT 1`,
@@ -618,7 +610,7 @@ export async function getEntryDiffPageData(
 
   const chain = await fetchEntryChain(entry.id);
   const breadcrumbs = buildBreadcrumbs(chain);
-  const readPath = buildEntryHref(chain);
+  const readPath = entry.href;
 
   return {
     entryId: entry.id,
@@ -656,6 +648,7 @@ export async function listRecentContributions(
     version_id: string;
     entry_id: string;
     entry_name: string;
+    entry_href: string;
     message: string;
     contributor_id: string;
     contributor_name: string;
@@ -664,6 +657,7 @@ export async function listRecentContributions(
     `SELECT v.id AS version_id,
             v.entry_id,
             e.name AS entry_name,
+            e.href AS entry_href,
             v.message,
             v.contributor_id,
             u.name AS contributor_name,
@@ -680,12 +674,11 @@ export async function listRecentContributions(
 
   const items: RecentContributionItem[] = [];
   for (const row of rows) {
-    const chain = await fetchEntryChain(row.entry_id);
     items.push({
       versionId: row.version_id,
       entryId: row.entry_id,
       entryName: row.entry_name,
-      entryHref: buildEntryHref(chain),
+      entryHref: row.entry_href,
       message: row.message?.trim() || "（无提交说明）",
       contributorId: row.contributor_id,
       contributorName: row.contributor_name,
@@ -708,13 +701,13 @@ export async function listRecentBlogs(
 
   const { rows } = await query<{
     id: string;
-    slug: string;
+    href: string;
     title: string;
     author_id: string;
     author_name: string;
     updated_at: Date;
   }>(
-    `SELECT e.id, e.slug, v.title,
+    `SELECT e.id, e.href, v.title,
             e.creator_id AS author_id,
             u.name AS author_name,
             e.updated_at
@@ -731,7 +724,7 @@ export async function listRecentBlogs(
   return rows.map((row) => ({
     entryId: row.id,
     title: row.title,
-    href: buildBlogEntryHref(row.slug),
+    href: row.href,
     authorId: row.author_id,
     authorName: row.author_name,
     updatedAt: row.updated_at.toISOString(),
@@ -751,6 +744,7 @@ export async function listUserContributions(
     version_id: string;
     entry_id: string;
     entry_name: string;
+    entry_href: string;
     message: string;
     contributor_id: string;
     contributor_name: string;
@@ -759,6 +753,7 @@ export async function listUserContributions(
     `SELECT v.id AS version_id,
             v.entry_id,
             e.name AS entry_name,
+            e.href AS entry_href,
             v.message,
             v.contributor_id,
             u.name AS contributor_name,
@@ -776,12 +771,11 @@ export async function listUserContributions(
 
   const items: RecentContributionItem[] = [];
   for (const row of rows) {
-    const chain = await fetchEntryChain(row.entry_id);
     items.push({
       versionId: row.version_id,
       entryId: row.entry_id,
       entryName: row.entry_name,
-      entryHref: buildEntryHref(chain),
+      entryHref: row.entry_href,
       message: row.message?.trim() || "（无提交说明）",
       contributorId: row.contributor_id,
       contributorName: row.contributor_name,
@@ -803,11 +797,11 @@ export async function listUserBlogs(
 
   const { rows } = await query<{
     id: string;
-    slug: string;
+    href: string;
     title: string;
     updated_at: Date;
   }>(
-    `SELECT e.id, e.slug, v.title, e.updated_at
+    `SELECT e.id, e.href, v.title, e.updated_at
      FROM entries e
      INNER JOIN entry_versions v ON v.id = e.current_version_id
      WHERE e.creator_id = $1
@@ -821,7 +815,7 @@ export async function listUserBlogs(
   return rows.map((row) => ({
     entryId: row.id,
     title: row.title,
-    href: buildBlogEntryHref(row.slug),
+    href: row.href,
     updatedAt: row.updated_at.toISOString(),
   }));
 }
@@ -892,9 +886,11 @@ async function buildEntrySearchItem(
   entryId: string
 ): Promise<EntrySearchItem | null> {
   const { rows } = await query<
-    Pick<EntryRow, "id" | "name" | "status"> & { content: string | null }
+    Pick<EntryRow, "id" | "name" | "href" | "status"> & {
+      content: string | null;
+    }
   >(
-    `SELECT e.id, e.name, e.status, v.content
+    `SELECT e.id, e.name, e.href, e.status, v.content
      FROM entries e
      LEFT JOIN entry_versions v ON v.id = e.current_version_id
      WHERE e.id = $1
@@ -911,7 +907,7 @@ async function buildEntrySearchItem(
   return {
     id: row.id,
     name: row.name,
-    href: buildEntryHref(chain),
+    href: row.href,
     breadcrumbs,
     breadcrumbPath: breadcrumbs.map((item) => item.name).join(" / "),
     excerpt: buildEntryExcerpt(row.content ?? ""),
@@ -927,10 +923,8 @@ export async function findEntrySearchItem(
 export async function getEntryEditPageData(
   entryId: string
 ): Promise<EntryEditPageData | null> {
-  const { rows } = await query<
-    EntryPageRow & { creator_id: string }
-  >(
-    `SELECT e.id, e.type, e.parent_id, e.slug, e.name, e.creator_id,
+  const { rows } = await query<EntryPageRow & { creator_id: string }>(
+    `SELECT e.id, e.type, e.parent_id, e.slug, e.name, e.href, e.creator_id,
             v.title, v.content
      FROM entries e
      INNER JOIN entry_versions v ON v.id = e.current_version_id
@@ -941,9 +935,6 @@ export async function getEntryEditPageData(
 
   const row = rows[0];
   if (!row) return null;
-
-  const chain = await fetchEntryChain(row.id);
-  const path = buildEntryHref(chain);
 
   const parent = row.parent_id
     ? await buildEntrySearchItem(row.parent_id)
@@ -958,7 +949,7 @@ export async function getEntryEditPageData(
     parentId: row.parent_id,
     title: row.title,
     content: row.content,
-    path,
+    path: row.href,
     parent,
   };
 }
@@ -1003,10 +994,10 @@ async function loadCurrentVersion(
 function buildUpdateResult(
   entryRow: EntryRow,
   versionRow: EntryVersionRow,
-  chain: EntryPathSegment[]
+  chain: EntryPathNode[]
 ): UpdateEntryResult {
   const breadcrumbs = buildBreadcrumbs(chain);
-  const href = buildEntryHref(chain);
+  const href = entryRow.href || buildEntryHref(chain);
 
   return {
     entry: mapEntry(entryRow),
@@ -1019,7 +1010,7 @@ function buildUpdateResult(
 
 export async function findEntryById(id: string): Promise<Entry | null> {
   const { rows } = await query<EntryRow>(
-    `SELECT id, type, parent_id, slug, name, status, current_version_id,
+    `SELECT id, type, parent_id, slug, name, href, status, current_version_id,
             creator_id, created_at, updated_at
      FROM entries
      WHERE id = $1
@@ -1034,7 +1025,7 @@ export async function findParentEntryForCreate(
   parentId: string
 ): Promise<Entry | null> {
   const { rows } = await query<EntryRow>(
-    `SELECT id, type, parent_id, slug, name, status, current_version_id,
+    `SELECT id, type, parent_id, slug, name, href, status, current_version_id,
             creator_id, created_at, updated_at
      FROM entries
      WHERE id = $1 AND status = 'published' AND type = 'common'
@@ -1043,6 +1034,97 @@ export async function findParentEntryForCreate(
   );
 
   return rows[0] ? mapEntry(rows[0]) : null;
+}
+
+/**
+ * 将 root 的新 href 写入自身，并按树级联更新所有子孙 href；
+ * 变更前的路径写入 entry_slug_redirects。
+ */
+async function cascadeEntryHrefs(
+  client: PoolClient,
+  rootEntryId: string,
+  rootNewHref: string
+): Promise<void> {
+  const { rows } = await client.query<{
+    id: string;
+    parent_id: string | null;
+    slug: string;
+    href: string;
+    depth: number;
+  }>(
+    `WITH RECURSIVE subtree AS (
+       SELECT id, parent_id, slug, href, 0 AS depth
+       FROM entries
+       WHERE id = $1
+       UNION ALL
+       SELECT e.id, e.parent_id, e.slug, e.href, s.depth + 1
+       FROM entries e
+       INNER JOIN subtree s ON e.parent_id = s.id
+     )
+     SELECT id, parent_id, slug, href, depth
+     FROM subtree
+     ORDER BY depth ASC`,
+    [rootEntryId]
+  );
+
+  if (rows.length === 0) return;
+
+  const newHrefById = new Map<string, string>();
+  newHrefById.set(rootEntryId, rootNewHref);
+
+  const updates: Array<{ id: string; oldHref: string; newHref: string }> = [];
+
+  for (const row of rows) {
+    let newHref: string;
+    if (row.id === rootEntryId) {
+      newHref = rootNewHref;
+    } else {
+      const parentHref = newHrefById.get(row.parent_id!);
+      if (!parentHref) {
+        throw new Error("级联更新 href 时缺少父级路径");
+      }
+      newHref = `${parentHref}/${row.slug}`;
+    }
+    newHrefById.set(row.id, newHref);
+
+    if (row.href !== newHref) {
+      updates.push({ id: row.id, oldHref: row.href, newHref });
+    }
+  }
+
+  for (const update of updates) {
+    await client.query(
+      `DELETE FROM entry_slug_redirects WHERE old_path = $1`,
+      [update.newHref]
+    );
+    await client.query(
+      `INSERT INTO entry_slug_redirects (entry_id, old_path)
+       VALUES ($1, $2)
+       ON CONFLICT (old_path) DO UPDATE
+       SET entry_id = EXCLUDED.entry_id`,
+      [update.id, update.oldHref]
+    );
+    await client.query(
+      `UPDATE entries
+       SET href = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [update.newHref, update.id]
+    );
+  }
+}
+
+async function resolveParentHref(
+  client: PoolClient,
+  parentId: string | null
+): Promise<string | null> {
+  if (!parentId) return null;
+  const result = await client.query<{ href: string }>(
+    `SELECT href FROM entries
+     WHERE id = $1 AND status = 'published' AND type = 'common'
+     LIMIT 1`,
+    [parentId]
+  );
+  return result.rows[0]?.href ?? null;
 }
 
 function hashContent(content: string): string {
@@ -1068,15 +1150,22 @@ export async function createEntry(
     if (type === "blog" && input.parentId !== null) {
       throw new Error("博客词条不能有父级");
     }
+
+    const parentHref = await resolveParentHref(client, input.parentId);
+    if (input.parentId && !parentHref) {
+      throw new Error("上级词条不存在或不可作为父级");
+    }
+
+    const href = resolveEntryHref(type, slug, parentHref);
     const toc = extractHeadings(input.content);
     const contentHash = hashContent(input.content);
 
     const entryResult = await client.query<EntryRow>(
-      `INSERT INTO entries (type, parent_id, slug, name, creator_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, type, parent_id, slug, name, status, current_version_id,
+      `INSERT INTO entries (type, parent_id, slug, name, href, creator_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, type, parent_id, slug, name, href, status, current_version_id,
                  creator_id, created_at, updated_at`,
-      [type, input.parentId, slug, input.name, input.creatorId]
+      [type, input.parentId, slug, input.name, href, input.creatorId]
     );
 
     const entryRow = entryResult.rows[0];
@@ -1114,17 +1203,19 @@ export async function createEntry(
 
     const chain = await fetchEntryChain(entryId, client);
     const breadcrumbs = buildBreadcrumbs(chain);
-    const href = buildEntryHref(chain);
 
     return {
       entry: mapEntry(entryRow),
       version: mapEntryVersion(versionRow),
-      href,
+      href: entryRow.href,
       breadcrumbs,
       breadcrumbPath: breadcrumbs.map((item) => item.name).join(" / "),
     };
   } catch (error) {
     await client.query("ROLLBACK");
+    if (isUniqueViolation(error)) {
+      throw new Error("URL 路径已被占用，请更换别名或上级词条");
+    }
     throw error;
   } finally {
     client.release();
@@ -1141,7 +1232,7 @@ export async function updateEntry(
     await client.query("BEGIN");
 
     const entryResult = await client.query<EntryRow>(
-      `SELECT id, type, parent_id, slug, name, status, current_version_id,
+      `SELECT id, type, parent_id, slug, name, href, status, current_version_id,
               creator_id, created_at, updated_at
        FROM entries
        WHERE id = $1 AND status = 'published'
@@ -1202,6 +1293,9 @@ export async function updateEntry(
         throw new Error(slugValidation.reason ?? "URL 别名无效");
       }
 
+      const pathChanged =
+        nextSlug !== entryRow.slug || nextParentId !== entryRow.parent_id;
+
       if (
         nextName !== entryRow.name ||
         nextSlug !== entryRow.slug ||
@@ -1218,6 +1312,20 @@ export async function updateEntry(
         entryRow.slug = nextSlug;
         entryRow.parent_id = nextParentId;
         metadataChanged = true;
+
+        if (pathChanged) {
+          const parentHref = await resolveParentHref(client, nextParentId);
+          if (nextParentId && !parentHref) {
+            throw new Error("上级词条不存在或不可作为父级");
+          }
+          const nextHref = resolveEntryHref(
+            entryRow.type,
+            nextSlug,
+            parentHref
+          );
+          await cascadeEntryHrefs(client, entryRow.id, nextHref);
+          entryRow.href = nextHref;
+        }
 
         if (nextName !== currentVersion.title) {
           await client.query(
@@ -1291,6 +1399,9 @@ export async function updateEntry(
     return buildUpdateResult(entryRow, versionRow, chain);
   } catch (error) {
     await client.query("ROLLBACK");
+    if (isUniqueViolation(error)) {
+      throw new Error("URL 路径已被占用，请更换别名或上级词条");
+    }
     throw error;
   } finally {
     client.release();

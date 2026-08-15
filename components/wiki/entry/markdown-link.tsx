@@ -7,7 +7,7 @@ import {
   isExternalHref,
   isInternalEntryHref,
   normalizeInternalEntryHref,
-} from "@/lib/wiki/resolve-entry-link";
+} from "@/lib/wiki/entry-slug";
 import { cn } from "@/lib/utils";
 
 export function MarkdownLink({

@@ -1,5 +1,5 @@
 import { query } from "@/lib/db";
-import { getEntryPageDataBySegments } from "@/lib/db/entries";
+import { getEntryPageDataByParams } from "@/lib/db/entries";
 import { isUuid } from "@/lib/wiki/entry-path";
 import type { EntryComment, EntryDiscussPageData } from "@/type/entry";
 
@@ -51,7 +51,7 @@ export async function listCommentsByEntryId(
 export async function getEntryDiscussPageDataBySegments(
   rawSlugs: string[]
 ): Promise<EntryDiscussPageData | null> {
-  const entry = await getEntryPageDataBySegments(rawSlugs);
+  const entry = await getEntryPageDataByParams(rawSlugs);
   if (!entry) return null;
 
   const comments = await listCommentsByEntryId(entry.id);

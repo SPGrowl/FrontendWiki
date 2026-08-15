@@ -23,6 +23,8 @@ export interface Entry {
   parentId: string | null;
   /** 本级 URL 片段，同级唯一；完整路径由祖先 slug 拼接 */
   slug: string;
+  /** 规范阅读路径（库内唯一），如 /entry/js 或 /entry/blog/foo */
+  href: string;
   status: EntryStatus;
   currentVersionId: string;
   creatorId: string;
@@ -84,11 +86,11 @@ export interface EntryLink {
 }
 
 
+/** 路径树上的展示节点：跳转用 href，展示用 name，段标识用 slug */
 export interface BreadcrumbItem {
-  id: string;
-  slug: string;
   name: string;
   href: string;
+  slug: string;
 }
 
 /** 词条阅读页读模型 */

@@ -3,7 +3,7 @@ import {
   buildBreadcrumbs,
   buildEntryEditHref,
   buildEntryHref,
-  type EntryPathSegment,
+  type EntryPathNode,
 } from "@/lib/wiki/entry-path";
 
 interface ChainRow {
@@ -11,11 +11,11 @@ interface ChainRow {
   parent_id: string | null;
   slug: string;
   name: string;
-  type: EntryPathSegment["type"];
+  type: EntryPathNode["type"];
   depth: number;
 }
 
-function mapChain(rows: ChainRow[]): EntryPathSegment[] {
+function mapChain(rows: ChainRow[]): EntryPathNode[] {
   return rows
     .sort((a, b) => b.depth - a.depth)
     .map((row) => ({
@@ -28,7 +28,7 @@ function mapChain(rows: ChainRow[]): EntryPathSegment[] {
 
 export async function fetchEntryChainForDraft(
   entryId: string
-): Promise<EntryPathSegment[]> {
+): Promise<EntryPathNode[]> {
   const { rows } = await query<ChainRow>(
     `WITH RECURSIVE chain AS (
        SELECT id, parent_id, slug, name, type, 0 AS depth

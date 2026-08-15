@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { WikiEntry } from "@/components/wiki/entry/WikiEntry";
-import { getEntryPageDataBySegments } from "@/lib/db/entries";
+import { getEntryPageDataByHref } from "@/lib/db/entries";
+import { hrefFromEntryParams } from "@/lib/wiki/entry-slug";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
@@ -9,14 +10,17 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const entry = await getEntryPageDataBySegments(slug);
+  const href = hrefFromEntryParams(slug);
+  const entry = href ? await getEntryPageDataByHref(href) : null;
   return { title: entry?.title ?? "词条未找到" };
 }
 
 export default async function CommonEntryPage({ params }: Props) {
   const { slug } = await params;
-  const entry = await getEntryPageDataBySegments(slug);
+  const href = hrefFromEntryParams(slug);
+  if (!href) notFound();
 
+  const entry = await getEntryPageDataByHref(href);
   if (!entry) notFound();
 
   return (
