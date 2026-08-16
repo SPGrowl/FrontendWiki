@@ -23,7 +23,8 @@ interface EntryToolbarProps {
   breadcrumbs: BreadcrumbItem[];
 }
 
-export function EntryToolbar({
+export function 
+EntryToolbar({
   activeTab = "read",
   readHref,
   editHref,

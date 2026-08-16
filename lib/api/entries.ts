@@ -41,7 +41,7 @@ export async function searchEntries(
 }
 
 /**
- * GET /api/entries/preview?href=entry/...
+ * GET /api/entries/preview?href=/entry/...
  * 无效链接返回 preview: null + error，不抛错（便于悬停卡展示）。
  */
 export async function fetchEntryPreview(

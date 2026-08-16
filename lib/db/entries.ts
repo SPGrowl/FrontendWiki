@@ -13,8 +13,8 @@ import {
   type EntryPathNode,
 } from "@/lib/wiki/entry-path";
 import {
+  classifyMarkdownHref,
   hrefFromEntryParams,
-  normalizeInternalEntryHref,
   resolveEntrySlug,
   validateSlug,
 } from "@/lib/wiki/entry-slug";
@@ -338,6 +338,7 @@ async function getEntryContributors(entryId: string): Promise<Contributor[]> {
   }));
 }
 
+// 根据ID拉取页面数据
 async function loadEntryPageData(entryId: string): Promise<EntryPageData | null> {
   const { rows } = await query<EntryPageRow>(
     `SELECT e.id, e.type, e.parent_id, e.slug, e.name, e.href,
@@ -422,14 +423,15 @@ export async function getCommonEntryPageData(
 export async function getEntryPageDataByHref(
   href: string
 ): Promise<EntryPageData | null> {
-  const normalized = normalizeInternalEntryHref(href);
-  if (!normalized) return null;
+  const parsed = classifyMarkdownHref(href);
+  if (parsed.kind !== "entry") return null;
 
-  const byHref = await findPublishedEntryIdByHref(normalized);
+  const byHref = await findPublishedEntryIdByHref(parsed.href);
   if (byHref) return loadEntryPageData(byHref);
 
-  const byRedirect = await findRedirectEntryIdByPath(normalized);
+  const byRedirect = await findRedirectEntryIdByPath(parsed.href);
   if (byRedirect) {
+
     return loadEntryPageData(byRedirect);
   }
 

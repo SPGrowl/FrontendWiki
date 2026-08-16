@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEntryPreviewByHref } from "@/lib/db/entries";
-import {
-  isInternalEntryHref,
-  normalizeInternalEntryHref,
-} from "@/lib/wiki/entry-slug";
+import { classifyMarkdownHref } from "@/lib/wiki/entry-slug";
 import type {
   EntryErrorResponse,
   EntryPreviewResponse,
@@ -20,23 +17,16 @@ export async function GET(request: Request) {
     );
   }
 
-  if (!isInternalEntryHref(href)) {
+  const parsed = classifyMarkdownHref(href);
+  if (parsed.kind !== "entry") {
     return NextResponse.json<EntryPreviewResponse>({
       preview: null,
-      error: "不是有效的站内词条链接（应为 entry/... ）",
-    });
-  }
-
-  const normalized = normalizeInternalEntryHref(href);
-  if (!normalized) {
-    return NextResponse.json<EntryPreviewResponse>({
-      preview: null,
-      error: "链接不完整或无效",
+      error: "不是有效的站内词条链接（应为 /entry/... ）",
     });
   }
 
   try {
-    const preview = await getEntryPreviewByHref(normalized);
+    const preview = await getEntryPreviewByHref(parsed.href);
     if (!preview) {
       return NextResponse.json<EntryPreviewResponse>({
         preview: null,

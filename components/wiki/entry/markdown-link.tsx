@@ -1,12 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import type { ComponentProps } from "react";
 import { EntryLinkPreview } from "@/components/wiki/entry/entry-link-preview";
-import {
-  isExternalHref,
-  splitCanonicalEntryHref,
-} from "@/lib/wiki/entry-slug";
+import { classifyMarkdownHref } from "@/lib/wiki/entry-slug";
 import { cn } from "@/lib/utils";
 
 function InvalidLink({
@@ -30,49 +26,28 @@ export function MarkdownLink({
   ...props
 }: ComponentProps<"a">) {
   const linkClassName = cn("wiki-link", className);
+  const parsed = classifyMarkdownHref(href);
 
-  if (!href) {
-    return <InvalidLink className={linkClassName}>{children}</InvalidLink>;
-  }
-
-  if (href.startsWith("#")) {
-    return (
-      <a href={href} className={linkClassName} {...props}>
-        {children}
-      </a>
-    );
-  }
-
-  const entry = splitCanonicalEntryHref(href);
-  if (entry) {
-    if (entry.hash) {
+  switch (parsed.kind) {
+    case "entry":
       return (
-        <Link href={`${entry.path}${entry.hash}`} className={linkClassName}>
+        <EntryLinkPreview href={parsed.href} className={linkClassName}>
           {children}
-        </Link>
+        </EntryLinkPreview>
       );
-    }
-
-    return (
-      <EntryLinkPreview href={entry.path} className={linkClassName}>
-        {children}
-      </EntryLinkPreview>
-    );
+    case "external":
+      return (
+        <a
+          href={parsed.href}
+          className={linkClassName}
+          target="_blank"
+          rel="noopener noreferrer"
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    case "invalid":
+      return <InvalidLink className={linkClassName}>{children}</InvalidLink>;
   }
-
-  if (isExternalHref(href)) {
-    return (
-      <a
-        href={href}
-        className={linkClassName}
-        target="_blank"
-        rel="noopener noreferrer"
-        {...props}
-      >
-        {children}
-      </a>
-    );
-  }
-
-  return <InvalidLink className={linkClassName}>{children}</InvalidLink>;
 }

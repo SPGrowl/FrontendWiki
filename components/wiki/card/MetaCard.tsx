@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getWikiStats } from "@/lib/db/stats";
+import { SiteUpdatesCard } from "@/components/wiki/home/SiteUpdatesCard";
 import { WikiCard } from "./WikiCard";
 
 function StatItem({ label, value }: { label: string; value: number }) {
@@ -50,6 +51,8 @@ export async function MetaCard() {
           </Link>
         </div>
       </WikiCard>
+
+      <SiteUpdatesCard />
     </div>
   );
 }

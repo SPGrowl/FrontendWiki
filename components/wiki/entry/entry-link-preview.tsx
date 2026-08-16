@@ -144,14 +144,19 @@ export function EntryLinkPreview({
     }, CLOSE_DELAY_MS);
   }, [clearTimers]);
 
+
+  // 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   useLayoutEffect(() => {
     if (!open) return;
+    // 重新渲染时，再计算一次卡片的位置
     updatePosition();
+    // 滚动时计算卡片位置
     const onScrollOrResize = () => updatePosition();
     window.addEventListener("scroll", onScrollOrResize, true);
     window.addEventListener("resize", onScrollOrResize);
+    // 卸载时移除事件监听
     return () => {
       window.removeEventListener("scroll", onScrollOrResize, true);
       window.removeEventListener("resize", onScrollOrResize);
@@ -161,6 +166,7 @@ export function EntryLinkPreview({
   const card =
     open && coords && typeof document !== "undefined"
       ? createPortal(
+        // 预览卡片
           <div
             id={tooltipId}
             role="tooltip"
@@ -205,7 +211,9 @@ export function EntryLinkPreview({
                   >
                     {preview.title}
                   </Link>
-                  {preview.excerpt ? (
+                  {preview.excerpt ? 
+                  //预览内容 
+                  (
                     <p className="mt-1.5 line-clamp-4 text-[13px] leading-relaxed text-muted-foreground [mask-image:linear-gradient(to_bottom,black_70%,transparent)]">
                       {preview.excerpt}
                     </p>

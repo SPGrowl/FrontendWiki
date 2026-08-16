@@ -34,7 +34,8 @@ const SAMPLE_INLINE = `段落里可以用 **加粗**、*斜体* 和 \`const x = 
 外链会在新标签打开：
 [MDN](https://developer.mozilla.org/)
 
-省略首斜杠无效：[js](entry/js)`
+省略首斜杠无效：[js](entry/js)
+带页内锚点无效：[概述](#概述)`;
 
 const SAMPLE_LISTS = `- 无序列表
 - 第二项
@@ -171,8 +172,15 @@ export default function GuidelinesPage() {
             <code className="rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem]">
               /entry/...
             </code>
-            （可带 <code className="rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem]">#标题锚点</code>
-            ），不要省略首斜杠，也不要链到编辑、历史等功能页。不合规则的链接会显示为无效。悬停规范站内链可预览摘要。
+            ，与库中阅读路径一致。不要省略首斜杠，不要带
+            <code className="rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem]">
+              #
+            </code>
+            或查询串；页内跳转请用左侧目录。需要指向更细主题时，链到子词条而不是
+            <code className="rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem]">
+              /entry/js#闭包
+            </code>
+            。不合规则的链接会显示为无效。悬停规范站内链可预览摘要。
           </p>
           <MarkdownSample source={SAMPLE_INLINE} />
           <MarkdownSample source={SAMPLE_LISTS} />

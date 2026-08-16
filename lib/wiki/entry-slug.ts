@@ -1,12 +1,11 @@
 /**
  * 词条 slug / URL：按功能三块
- * 1. 解析 — Next params 或站内 href → 明文 /entry/... （唯一需要处理 % 编码的地方）
- * 2. 预览拼接 — 父级明文 href + 本级 slug → 预览路径
- * 3. 校验 — 输入 name、slug 的规范化与合法性
+ * 1. 路由进门 — Next params → 明文 /entry/...（唯一处理 % 编码）
+ * 2. 正文链接 — classifyMarkdownHref（词条 / 外链 / 无效）
+ * 3. 编辑器 — 预览拼接与 slug 校验
  *
- * 约定：业务层（API、读模型、Link、预览）一律使用明文 `/entry/...` href；
- * 库内 entries.href 为全局唯一物化路径，阅读页按该列直查。
- * HTTP 线路上的 percent-encoding 由浏览器处理，应用内不要再 encode 词条 path。
+ * 约定：业务层一律使用明文 `/entry/...`；库内 entries.href 全局唯一。
+ * 正文不认 # 锚点、不补斜杠、不剥 query。
  */
 
 import type { EntryCreateType } from "@/type/entry-api";
@@ -21,7 +20,7 @@ export const RESERVED_SLUGS = new Set([BLOG_SLUG]);
 export const BLOG_SEGMENT = BLOG_SLUG;
 
 // ---------------------------------------------------------------------------
-// 1. 解析（明文 href）
+// 1. 路由进门 + 正文链接分类
 // ---------------------------------------------------------------------------
 
 /** Next params 里可能残留的 %XX → 明文（仅此边界使用） */
@@ -64,107 +63,41 @@ export function buildCommonHref(slugs: string[]): string {
   return `${ENTRY_PREFIX}/${slugs.map(normalizeSlugValue).join("/")}`;
 }
 
-export function isExternalHref(href: string): boolean {
-  return /^https?:\/\//i.test(href) || href.startsWith("//");
-}
+export type MarkdownHref =
+  | { kind: "entry"; href: string }
+  | { kind: "external"; href: string }
+  | { kind: "invalid" };
 
 /**
- * 正文站内词条：必须已是 `/entry/{...}`，可选 `#锚点`。
- * 不补斜杠、不去尾斜杠、不剥 query；不合规则返回 null。
+ * 正文 / 预览共用的 href 分类。
+ * 词条必须已是 `/entry/{...}`，与 entries.href 一致；含 # 或 ? 的站内写法无效。
+ * 外链允许自身的 query / hash。
  */
-export function splitCanonicalEntryHref(
-  href: string
-): { path: string; hash: string } | null {
-  if (!href.startsWith(`${ENTRY_PREFIX}/`)) return null;
+export function classifyMarkdownHref(
+  raw: string | null | undefined
+): MarkdownHref {
+  if (!raw) return { kind: "invalid" };
 
-  const hashIndex = href.indexOf("#");
-  const path = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
-  const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
-
-  if (path.length <= ENTRY_PREFIX.length + 1) return null;
-  if (path.includes("?")) return null;
-
-  return { path, hash };
-}
-
-/** 是否为站内词条 href（允许省略前导 `/`） */
-export function isInternalEntryHref(href: string): boolean {
-  const trimmed = href.trim();
-  if (!trimmed || trimmed.startsWith("#")) return false;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return false;
-  if (trimmed.startsWith("//")) return false;
-
-  const pathOnly = trimmed.split(/[?#]/)[0] ?? trimmed;
-  return (
-    pathOnly === "entry" ||
-    pathOnly.startsWith("entry/") ||
-    pathOnly === ENTRY_PREFIX ||
-    pathOnly.startsWith(`${ENTRY_PREFIX}/`)
-  );
-}
-
-/**
- * 将 `entry/foo`、`/entry/foo` 规范为明文 `/entry/...`（去掉 query/hash、尾斜杠）。
- * 非法或仅为 `/entry` 时返回 null。
- */
-export function normalizeInternalEntryHref(href: string): string | null {
-  if (!isInternalEntryHref(href)) return null;
-
-  const trimmed = href.trim();
-  const hashIndex = trimmed.search(/#/);
-  const withoutHash =
-    hashIndex >= 0 ? trimmed.slice(0, hashIndex) : trimmed;
-  const pathAndQuery = withoutHash.split("?")[0] ?? withoutHash;
-  let path = pathAndQuery.trim();
-
-  if (path.startsWith("entry/") || path === "entry") {
-    path = `/${path}`;
+  if (
+    raw.startsWith("https://") ||
+    raw.startsWith("http://") ||
+    raw.startsWith("//")
+  ) {
+    return { kind: "external", href: raw };
   }
 
-  if (path !== ENTRY_PREFIX && !path.startsWith(`${ENTRY_PREFIX}/`)) {
-    return null;
+  if (raw.includes("#") || raw.includes("?")) {
+    return { kind: "invalid" };
   }
 
-  if (path.length > ENTRY_PREFIX.length && path.endsWith("/")) {
-    path = path.replace(/\/+$/, "");
+  if (
+    raw.startsWith(`${ENTRY_PREFIX}/`) &&
+    raw.length > ENTRY_PREFIX.length + 1
+  ) {
+    return { kind: "entry", href: raw };
   }
 
-  if (!path || path === ENTRY_PREFIX) return null;
-  return path;
-}
-
-/** 博客词条：`/entry/blog/{slug}` → 本级 slug；否则 null */
-export function blogSlugFromHref(href: string): string | null {
-  const normalized = normalizeInternalEntryHref(href);
-  if (!normalized) return null;
-
-  const prefix = `${ENTRY_PREFIX}/${BLOG_SLUG}/`;
-  if (!normalized.startsWith(prefix)) return null;
-
-  const slug = normalized.slice(prefix.length);
-  if (!slug || slug.includes("/")) return null;
-  return slug;
-}
-
-/**
- * 普通词条明文 href → 从根到叶的各级 slug（供逐级查库）。
- * 博客路径返回 null（应走 blogSlugFromHref）。
- */
-export function commonSlugsFromHref(href: string): string[] | null {
-  const normalized = normalizeInternalEntryHref(href);
-  if (!normalized) return null;
-  if (blogSlugFromHref(normalized) !== null) return null;
-  if (normalized.startsWith(`${ENTRY_PREFIX}/${BLOG_SLUG}`)) return null;
-
-  const rest = normalized.slice(ENTRY_PREFIX.length + 1);
-  const slugs = rest.split("/").filter(Boolean);
-  return slugs.length > 0 ? slugs : null;
-}
-
-/** @deprecated 使用 normalizeInternalEntryHref */
-export function parseEntryHref(href: string): { href: string } | null {
-  const normalized = normalizeInternalEntryHref(href);
-  return normalized ? { href: normalized } : null;
+  return { kind: "invalid" };
 }
 
 // ---------------------------------------------------------------------------
