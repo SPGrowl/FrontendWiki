@@ -922,6 +922,16 @@ export async function findEntrySearchItem(
   return buildEntrySearchItem(entryId);
 }
 
+/** @deprecated 使用 findEntrySearchItem；供 entry-edit 装载父级 */
+export async function buildEntrySearchItemById(
+  entryId: string
+): Promise<EntrySearchItem | null> {
+  return buildEntrySearchItem(entryId);
+}
+
+/**
+ * @deprecated 编辑页改用 getEntryEditBundleByHref（lib/db/entry-edit.ts）
+ */
 export async function getEntryEditPageData(
   entryId: string
 ): Promise<EntryEditPageData | null> {

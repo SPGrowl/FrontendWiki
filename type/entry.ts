@@ -1,4 +1,5 @@
 import type { User} from "@/type/user";
+import type { EntrySearchItem } from "@/type/entry-api";
 
 /** 词条类型，对应 entries.type CHECK 约束 */
 export type EntryType = "common" | "blog" | "stub";
@@ -103,6 +104,43 @@ export interface EntryPageData {
   breadcrumbs: BreadcrumbItem[];
   relatedEntries: RelatedEntryies;
   contributors: Contributor[];
+}
+
+/** 编辑页：词条元数据（名称锁定为 entries.name，仅创建者/admin 可改） */
+export interface EntryEditMetadata {
+  id: string;
+  /** 展示名 / 元数据标题，对应 entries.name */
+  name: string;
+  slug: string;
+  type: EntryType;
+  href: string;
+  parentId: string | null;
+  /** 父级选择器 / 展示用；无父级为 null */
+  parent: EntrySearchItem | null;
+  creatorId: string;
+}
+
+/** 编辑页：current_version_id 指向的已发布版本（正文侧） */
+export interface EntryEditCurrentVersion {
+  id: string;
+  content: string;
+  versionNo: number;
+  message: string;
+  contributorId: string;
+}
+
+/** 编辑页：当前用户对该词条的草稿（仅正文工作区字段） */
+export interface EntryEditDraft {
+  id: string;
+  content: string;
+  message: string;
+}
+
+/** 编辑页一次装载的三块读模型 */
+export interface EntryEditBundle {
+  metadata: EntryEditMetadata;
+  currentVersion: EntryEditCurrentVersion;
+  draft: EntryEditDraft | null;
 }
 
 /**

@@ -3,30 +3,34 @@ import { notFound, redirect } from "next/navigation";
 import { EntryEditEditor } from "@/components/wiki/editor/entry-edit-editor";
 import { canEditEntryMetadata } from "@/lib/auth/entry-permissions";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { findDraftById } from "@/lib/db/drafts";
-import {
-  findEntrySearchItem,
-  getEntryEditPageData,
-  getEntryPageDataByHref,
-} from "@/lib/db/entries";
+import { getEntryEditBundleByHref } from "@/lib/db/entry-edit";
 import { buildEntryEditHref } from "@/lib/wiki/entry-path";
 import { hrefFromEntryParams } from "@/lib/wiki/entry-slug";
 
 type Props = {
   params: Promise<{ slug: string[] }>;
-  searchParams: Promise<{ draft?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const href = hrefFromEntryParams(slug);
-  const entry = href ? await getEntryPageDataByHref(href) : null;
-  return { title: entry ? `编辑：${entry.title}` : "编辑词条" };
+  // 不传 userId：只取 metadata.name，不查草稿
+  const bundle = href ? await getEntryEditBundleByHref(href) : null;
+  return {
+    title: bundle ? `编辑：${bundle.metadata.name}` : "编辑词条",
+  };
 }
 
-export default async function EditEntryPage({ params, searchParams }: Props) {
+/**
+ * 编辑页装载（三块）：
+ * 1. metadata — name / slug / type / parent / href（name = 唯一展示名）
+ * 2. currentVersion — 发布指针指向的正文版本
+ * 3. draft — 当前用户最新 edit 草稿的 content+message；无则编辑区复制 currentVersion.content
+ * + canEditMetadata — 创建者或 admin 才能改元数据行
+ */
+export default async function EditEntryPage({ params }: Props) {
   const { slug } = await params;
-  const { draft: draftId } = await searchParams;
+
   const href = hrefFromEntryParams(slug);
   if (!href) notFound();
 
@@ -37,45 +41,29 @@ export default async function EditEntryPage({ params, searchParams }: Props) {
     redirect(`/auth/login?next=${encodeURIComponent(editPath)}`);
   }
 
-  const entry = await getEntryPageDataByHref(href);
-  if (!entry) notFound();
+  const bundle = await getEntryEditBundleByHref(href, user.id);
+  if (!bundle) notFound();
 
-  const editData = await getEntryEditPageData(entry.id);
-  if (!editData) notFound();
+  const { metadata, currentVersion, draft } = bundle;
+  const canEditMetadata = canEditEntryMetadata(user, metadata.creatorId);
 
-  const canEditMetadata = canEditEntryMetadata(user, editData.creatorId);
-
-  let loadedDraft = draftId
-    ? await findDraftById(draftId, user.id)
-    : null;
-
-  if (
-    loadedDraft &&
-    (loadedDraft.draftType !== "edit" ||
-      loadedDraft.entryId !== editData.id)
-  ) {
-    loadedDraft = null;
-  }
-
-  let initialParent = editData.parent;
-  if (loadedDraft?.parentId && canEditMetadata && editData.type === "common") {
-    initialParent =
-      (await findEntrySearchItem(loadedDraft.parentId)) ?? editData.parent;
-  }
+  // 无草稿：diff 右栏 / 初始正文 = 已发布正文的一份拷贝
+  const initialContent = draft?.content ?? currentVersion.content;
+  const initialMessage = draft?.message ?? "";
 
   return (
     <EntryEditEditor
-      entryId={editData.id}
-      entryType={editData.type}
-      publishedContent={editData.content}
-      initialName={loadedDraft?.name ?? editData.name}
-      initialSlug={loadedDraft?.slug ?? editData.slug}
-      initialContent={loadedDraft?.content ?? editData.content}
-      initialMessage={loadedDraft?.message ?? ""}
-      initialParent={initialParent}
-      readHref={entry.path}
+      entryId={metadata.id}
+      entryType={metadata.type}
+      publishedContent={currentVersion.content}
+      initialName={metadata.name}
+      initialSlug={metadata.slug}
+      initialContent={initialContent}
+      initialMessage={initialMessage}
+      initialParent={metadata.parent}
+      readHref={metadata.href}
       canEditMetadata={canEditMetadata}
-      draftId={loadedDraft?.id}
+      draftId={draft?.id}
     />
   );
 }

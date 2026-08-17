@@ -1,5 +1,50 @@
 # 开发日志
 
+## 2026-08-17 — 编辑页装载三块读模型（元数据 / 当前版本 / 草稿）
+
+### 背景
+
+编辑页曾先拉完整 `EntryPageData`（侧栏相关树、贡献者等用不上），再拉 `EntryEditPageData`，并依赖 `?draft=` 显式指定草稿。字段上 `name` 与版本 `title` 混用，草稿还曾用 name/slug 覆盖线上元数据，和「元数据 ≠ 版本」的产品边界不一致。
+
+### 约定
+
+编辑页一次按阅读 `href` 装载三块：
+
+1. **metadata** — `entries.name`（唯一展示名）、`slug`、`type`、`href`、`parent` / `parentId`、`creatorId`
+2. **currentVersion** — `current_version_id` 指向的版本（正文、`versionNo`、`message`、贡献者）
+3. **draft** — 当前用户对该词条最新一条 `draft_type=edit` 草稿的 `content` + `message`；无则 `null`
+
+另算 **`canEditMetadata`**（创建者或 admin）控制元数据编辑行。
+
+- 无草稿：编辑区初始正文 = 已发布正文的拷贝（Merge 右栏）
+- 有草稿：只用草稿的正文与说明；**不**用草稿覆盖线上 name/slug/父级
+- 不再依赖查询参数 `?draft=`
+
+### 实现
+
+```
+type/entry.ts
+  EntryEditMetadata / EntryEditCurrentVersion / EntryEditDraft / EntryEditBundle
+
+lib/db/entry-edit.ts
+  getEntryEditBundleByHref(href, userId?)
+
+lib/db/drafts.ts
+  findLatestEditDraftForEntry(userId, entryId)
+
+app/(root)/entry/edit/[...slug]/page.tsx
+  登录 → bundle → canEditMetadata → EntryEditEditor
+
+getEntryEditPageData 标为 deprecated
+```
+
+### 后续可选
+
+- 草稿表收敛为仅存正文工作区字段（不再持久化 name/slug）
+- 版本表 `title` 与 `entries.name` 彻底解耦或删除冗余同步
+
+---
+
 ## 2026-08-16 — 词条链接预览：设计说明入档
 
 悬停预览的约定、状态时序与文件分工写入 `docs/dev/词条链接预览.md`（目录见 `docs/dev/README.md`）。要点：只按规范 `href` 取摘要；正文不认 `#` 锚点；280ms 开 / 180ms 关；模块级缓存。

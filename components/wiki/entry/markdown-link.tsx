@@ -31,6 +31,7 @@ export function MarkdownLink({
   switch (parsed.kind) {
     case "entry":
       return (
+        // TODO：模块级词条预览缓存
         <EntryLinkPreview href={parsed.href} className={linkClassName}>
           {children}
         </EntryLinkPreview>

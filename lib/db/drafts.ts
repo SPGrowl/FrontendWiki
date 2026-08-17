@@ -161,6 +161,26 @@ export async function findDraftById(
   return rows[0] ? mapDraft(rows[0]) : null;
 }
 
+/** 当前用户对该词条的最新一条 edit 草稿（按 updated_at） */
+export async function findLatestEditDraftForEntry(
+  userId: string,
+  entryId: string
+): Promise<EntryDraft | null> {
+  const { rows } = await query<DraftRow>(
+    `SELECT id, user_id, entry_id, draft_type, name, content, message,
+            entry_type, parent_id, slug, created_at, updated_at
+     FROM entry_drafts
+     WHERE user_id = $1
+       AND entry_id = $2
+       AND draft_type = 'edit'
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [userId, entryId]
+  );
+
+  return rows[0] ? mapDraft(rows[0]) : null;
+}
+
 export async function listDraftsByUser(
   userId: string,
   options?: { entryId?: string }

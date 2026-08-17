@@ -17,13 +17,18 @@ import type { EntrySearchItem } from "@/type/entry-api";
 interface EntryEditEditorProps {
   entryId: string;
   entryType: EntryType;
+  /** 已发布正文：Merge 左栏 baseline */
   publishedContent: string;
+  /** 元数据名称 entries.name（仅 canEditMetadata 时可改） */
   initialName: string;
   initialSlug: string;
+  /** 草稿正文，或无草稿时对 publishedContent 的拷贝 */
   initialContent: string;
+  /** 草稿 message；无草稿则为空 */
   initialMessage?: string;
   initialParent: EntrySearchItem | null;
   readHref: string;
+  /** 创建者或 admin：开启元数据编辑行 */
   canEditMetadata: boolean;
   draftId?: string;
 }

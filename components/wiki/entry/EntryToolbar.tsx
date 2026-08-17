@@ -46,6 +46,7 @@ EntryToolbar({
         className="flex shrink-0 flex-wrap items-end gap-0"
       >
         {tabs.map((tab) => {
+          // 取出tab对应的href
           const href = hrefByTab[tab.id];
           const isActive = tab.id === activeTab;
           const className = cn(
