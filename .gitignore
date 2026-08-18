@@ -39,8 +39,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# dev logs (local only)
+# local-only dev / review / interview docs (keep original materials privately)
 /dev-logs/
-
-# dev logs (local only)
-/dev-logs/
+/docs/

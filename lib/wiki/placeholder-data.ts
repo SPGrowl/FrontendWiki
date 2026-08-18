@@ -23,6 +23,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
     items: [
       { label: "调色盘", href: "/tools/color-picker" },
       { label: "JS 运行器", href: "/tools/js-runner" },
+      { label: "HTML Playground", href: "/tools/html-playground" },
       { label: "正则测试", href: "/tools/regex" },
       { label: "JSON 格式化", href: "/tools/json-formatter" },
       { label: "全部工具", href: "/tools" },

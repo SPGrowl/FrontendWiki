@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import type { SidebarNavGroup } from "@/lib/wiki/placeholder-data";
+import { useHtmlPlayground } from "@/components/tools/html-playground/html-playground-context";
 import { useJsRunner } from "@/components/tools/js-runner/js-runner-context";
 
 const JS_RUNNER_HREF = "/tools/js-runner";
+const HTML_PLAYGROUND_HREF = "/tools/html-playground";
 
 const linkClassName =
   "flex w-full items-center gap-1 truncate rounded-md px-2 py-1.5 text-left text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none";
 
 export function SidebarNav({ groups }: { groups: SidebarNavGroup[] }) {
   const { openRunner } = useJsRunner();
+  const { openPlayground } = useHtmlPlayground();
 
   return (
     <nav className="flex flex-col gap-4 px-2 py-2 text-sm">
@@ -40,6 +43,14 @@ export function SidebarNav({ groups }: { groups: SidebarNavGroup[] }) {
                   <button
                     type="button"
                     onClick={() => openRunner()}
+                    className={linkClassName}
+                  >
+                    {item.label}
+                  </button>
+                ) : item.href === HTML_PLAYGROUND_HREF ? (
+                  <button
+                    type="button"
+                    onClick={() => openPlayground()}
                     className={linkClassName}
                   >
                     {item.label}

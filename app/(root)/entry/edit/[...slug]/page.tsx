@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { EntryEditEditor } from "@/components/wiki/editor/entry-edit-editor";
+import { EntryEditor } from "@/components/wiki/editor/entry-edit-editor";
 import { canEditEntryMetadata } from "@/lib/auth/entry-permissions";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getEntryEditBundleByHref } from "@/lib/db/entry-edit";
@@ -52,7 +52,7 @@ export default async function EditEntryPage({ params }: Props) {
   const initialMessage = draft?.message ?? "";
 
   return (
-    <EntryEditEditor
+    <EntryEditor
       entryId={metadata.id}
       entryType={metadata.type}
       publishedContent={currentVersion.content}

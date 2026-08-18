@@ -76,6 +76,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const metadataAllowed = canEditEntryMetadata(user, entry.creatorId);
 
+  // 校验字段是否有效
   if (
     !metadataAllowed &&
     (payload?.name !== undefined ||
@@ -114,6 +115,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
+    // 写数据库
     const result = await updateEntry({
       entryId: id,
       contributorId: userId,
@@ -154,6 +156,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    // 处理重复slug的数据库错误
     const pgCode =
       error &&
       typeof error === "object" &&

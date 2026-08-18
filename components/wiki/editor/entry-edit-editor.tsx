@@ -14,7 +14,7 @@ import { updateEntry } from "@/lib/api/entries";
 import type { EntryType } from "@/type/entry";
 import type { EntrySearchItem } from "@/type/entry-api";
 
-interface EntryEditEditorProps {
+interface EntryEditorProps {
   entryId: string;
   entryType: EntryType;
   /** 已发布正文：Merge 左栏 baseline */
@@ -33,7 +33,7 @@ interface EntryEditEditorProps {
   draftId?: string;
 }
 
-export function EntryEditEditor({
+export function EntryEditor({
   entryId,
   entryType,
   publishedContent,
@@ -45,7 +45,8 @@ export function EntryEditEditor({
   readHref,
   canEditMetadata,
   draftId: initialDraftId,
-}: EntryEditEditorProps) {
+}: EntryEditorProps) {
+  // 表单内容均状态提升至父组件，通过参数和回调进行更改
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [slug, setSlug] = useState(initialSlug);
@@ -58,6 +59,7 @@ export function EntryEditEditor({
   const [pending, setPending] = useState<"draft" | "publish" | null>(null);
 
   const trimmedName = name.trim();
+  // 传给编辑器工作区的文本
   const trimmedContent = content.trim();
   const trimmedSlug = slug.trim();
   const trimmedMessage = message.trim();
@@ -161,6 +163,7 @@ export function EntryEditEditor({
       if (draftId) {
         await updateDraft(draftId, buildDraftPayload());
       } else {
+
         const result = await createDraft(buildDraftPayload());
         setDraftId(result.draft.id);
       }
@@ -175,6 +178,7 @@ export function EntryEditEditor({
   }
 
   async function handlePublish() {
+    // 字段校验
     if (!validatePublish()) return;
 
     setPending("publish");

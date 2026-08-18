@@ -40,6 +40,7 @@ export function EntryEditorWorkspace({
 }: EntryEditorWorkspaceProps) {
   const [viewMode, setViewMode] = useState<EditorViewMode>("source");
   const [pickerOpen, setPickerOpen] = useState(false);
+  // 编辑器本体的引用
   const editorRef = useRef<MarkdownEditorHandle>(null);
   const isDiffMode = baselineContent !== undefined;
 

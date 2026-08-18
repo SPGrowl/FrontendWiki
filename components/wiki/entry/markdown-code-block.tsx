@@ -2,19 +2,28 @@
 
 import * as React from "react";
 import { CheckIcon, CopyIcon, PlayIcon } from "@phosphor-icons/react";
+import { useHtmlPlayground } from "@/components/tools/html-playground/html-playground-context";
 import { useJsRunner } from "@/components/tools/js-runner/js-runner-context";
-import { isRunnableJsLanguage } from "@/lib/wiki/is-runnable-js";
+import type { SandboxKind } from "@/lib/wiki/code-fence/languages";
 import { cn } from "@/lib/utils";
 
 interface MarkdownCodeBlockProps {
   language: string;
   code: string;
+  sandbox?: SandboxKind;
+  runPayload?: string;
 }
 
-export function MarkdownCodeBlock({ language, code }: MarkdownCodeBlockProps) {
+export function MarkdownCodeBlock({
+  language,
+  code,
+  sandbox,
+  runPayload,
+}: MarkdownCodeBlockProps) {
   const { openRunner } = useJsRunner();
+  const { openPlayground } = useHtmlPlayground();
   const [copied, setCopied] = React.useState(false);
-  const runnable = isRunnableJsLanguage(language);
+  const runnable = sandbox != null && runPayload != null;
   const label = language || "text";
 
   const handleCopy = async () => {
@@ -25,6 +34,15 @@ export function MarkdownCodeBlock({ language, code }: MarkdownCodeBlockProps) {
     } catch {
       // 剪贴板不可用时静默失败
     }
+  };
+
+  const handleRun = () => {
+    if (!runnable) return;
+    if (sandbox === "html") {
+      openPlayground({ html: runPayload });
+      return;
+    }
+    openRunner({ code: runPayload });
   };
 
   return (
@@ -54,7 +72,7 @@ export function MarkdownCodeBlock({ language, code }: MarkdownCodeBlockProps) {
           {runnable && (
             <button
               type="button"
-              onClick={() => openRunner({ code })}
+              onClick={handleRun}
               className={cn(
                 "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px]",
                 "text-wiki-link transition-colors",
