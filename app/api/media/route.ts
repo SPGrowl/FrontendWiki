@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/session";
 import { listMediaAssets } from "@/lib/db/media";
 import { isUuid } from "@/lib/wiki/entry-path";
-import type { MediaPurpose } from "@/type/media";
-import type { MediaErrorResponse, MediaListResponse } from "@/type/media-api";
+import type { ApiErrorResponse } from "@/type/api";
+import type { MediaListResult, MediaPurpose } from "@/type/media";
 
 /**
  * GET /api/media
@@ -16,7 +16,7 @@ import type { MediaErrorResponse, MediaListResponse } from "@/type/media-api";
 export async function GET(request: Request) {
   const userId = await getSessionUserId();
   if (!userId) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "请先登录" },
       { status: 401 }
     );
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   if (purposeRaw === "avatar" || purposeRaw === "entry" || purposeRaw === "all") {
     purpose = purposeRaw;
   } else {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "purpose 必须是 entry、avatar 或 all" },
       { status: 400 }
     );
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     uploaderId = userId;
   }
   if (uploaderId && uploaderId !== "me" && !isUuid(uploaderId)) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "uploaderId 无效" },
       { status: 400 }
     );
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     if (!uploaderId) {
       uploaderId = userId;
     } else if (uploaderId !== userId) {
-      return NextResponse.json<MediaErrorResponse>(
+      return NextResponse.json<ApiErrorResponse>(
         { error: "只能查看自己的头像上传记录" },
         { status: 403 }
       );
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
 
   if (purpose === "all" && uploaderId && uploaderId !== userId) {
     // all 含头像：只允许看自己的合集
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "查看全部用途时只能筛选自己" },
       { status: 403 }
     );
@@ -78,13 +78,13 @@ export async function GET(request: Request) {
     : undefined;
 
   if (Number.isNaN(offset) || offset < 0) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "offset 无效" },
       { status: 400 }
     );
   }
   if (limit !== undefined && (Number.isNaN(limit) || limit < 1)) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "limit 无效" },
       { status: 400 }
     );
@@ -98,10 +98,10 @@ export async function GET(request: Request) {
       offset,
       limit,
     });
-    return NextResponse.json<MediaListResponse>({ items, nextOffset });
+    return NextResponse.json<MediaListResult>({ items, nextOffset });
   } catch (error) {
     console.error("[GET /api/media]", error);
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "获取图库失败" },
       { status: 500 }
     );

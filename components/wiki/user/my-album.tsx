@@ -68,7 +68,7 @@ export function MyAlbum({
     setUploading(true);
     setError(null);
     try {
-      const { asset } = await uploadMedia({
+      const asset = await uploadMedia({
         file: pendingFile,
         purpose: "entry",
         title: trimmed,
@@ -118,7 +118,7 @@ export function MyAlbum({
     setBusyId(id);
     setError(null);
     try {
-      const { asset } = await updateMedia(id, { title: trimmed });
+      const asset = await updateMedia(id, { title: trimmed });
       setItems((prev) =>
         prev.map((item) => (item.id === id ? asset : item))
       );

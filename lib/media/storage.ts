@@ -13,7 +13,7 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** 相对 storage/uploads 的 key，如 entry/2026/08/uuid.jpg */
+/** 生成相对 storage/uploads 的 key，如 entry/2026/08/uuid.jpg */
 export function buildStorageKey(
   purpose: MediaPurpose,
   mime: MediaAllowedMime,
@@ -29,6 +29,7 @@ export function publicUrlForKey(storageKey: string): string {
   return `/uploads/${storageKey.split(path.sep).join("/")}`;
 }
 
+/** 根据key生成绝对路径*/
 export function absolutePathForKey(storageKey: string): string {
   return path.join(UPLOADS_ROOT, ...storageKey.split("/"));
 }

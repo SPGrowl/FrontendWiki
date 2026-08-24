@@ -9,11 +9,11 @@ import { findUserById, updateUserAvatar } from "@/lib/db/users";
 import { deleteUploadFile } from "@/lib/media/storage";
 import { normalizeRequiredMediaTitle } from "@/lib/media/validate-upload";
 import { isUuid } from "@/lib/wiki/entry-path";
+import type { ApiErrorResponse } from "@/type/api";
 import type {
-  MediaErrorResponse,
-  MediaResponse,
-} from "@/type/media-api";
-import type { MediaAsset } from "@/type/media";
+  MediaAssetPayload,
+  MediaAssetWithStorage,
+} from "@/type/media";
 import type { User } from "@/type/user";
 
 type RouteContext = {
@@ -23,7 +23,7 @@ type RouteContext = {
 type AuthOk = {
   userId: string;
   user: User;
-  asset: MediaAsset & { storageKey: string };
+  asset: MediaAssetWithStorage;
 };
 
 async function requireMediaOwnerOrAdmin(
@@ -32,7 +32,7 @@ async function requireMediaOwnerOrAdmin(
   const userId = await getSessionUserId();
   if (!userId) {
     return {
-      error: NextResponse.json<MediaErrorResponse>(
+      error: NextResponse.json<ApiErrorResponse>(
         { error: "请先登录" },
         { status: 401 }
       ),
@@ -42,7 +42,7 @@ async function requireMediaOwnerOrAdmin(
   const user = await findUserById(userId);
   if (!user) {
     return {
-      error: NextResponse.json<MediaErrorResponse>(
+      error: NextResponse.json<ApiErrorResponse>(
         { error: "用户不存在或会话已失效" },
         { status: 401 }
       ),
@@ -51,7 +51,7 @@ async function requireMediaOwnerOrAdmin(
 
   if (!isUuid(mediaId)) {
     return {
-      error: NextResponse.json<MediaErrorResponse>(
+      error: NextResponse.json<ApiErrorResponse>(
         { error: "媒体 ID 无效" },
         { status: 400 }
       ),
@@ -61,7 +61,7 @@ async function requireMediaOwnerOrAdmin(
   const asset = await findMediaById(mediaId);
   if (!asset) {
     return {
-      error: NextResponse.json<MediaErrorResponse>(
+      error: NextResponse.json<ApiErrorResponse>(
         { error: "媒体不存在" },
         { status: 404 }
       ),
@@ -71,7 +71,7 @@ async function requireMediaOwnerOrAdmin(
   const isAdmin = user.role === "admin";
   if (!isAdmin && asset.uploader.id !== userId) {
     return {
-      error: NextResponse.json<MediaErrorResponse>(
+      error: NextResponse.json<ApiErrorResponse>(
         { error: "只能管理自己上传的图片" },
         { status: 403 }
       ),
@@ -98,7 +98,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "请求体必须是 JSON" },
       { status: 400 }
     );
@@ -110,7 +110,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       : null;
 
   if (!payload || !("title" in payload)) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "请提供说明（title）" },
       { status: 400 }
     );
@@ -118,7 +118,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const title = normalizeRequiredMediaTitle(payload.title);
   if (title === null) {
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "说明不能为空" },
       { status: 400 }
     );
@@ -127,15 +127,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   try {
     const asset = await updateMediaTitle(id, title);
     if (!asset) {
-      return NextResponse.json<MediaErrorResponse>(
+      return NextResponse.json<ApiErrorResponse>(
         { error: "媒体不存在" },
         { status: 404 }
       );
     }
-    return NextResponse.json<MediaResponse>({ asset });
+    return NextResponse.json<MediaAssetPayload>({ asset });
   } catch (error) {
     console.error("[PATCH /api/media/:id]", error);
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "更新失败" },
       { status: 500 }
     );
@@ -154,7 +154,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     const deleted = await deleteMediaAsset(id);
     if (!deleted) {
-      return NextResponse.json<MediaErrorResponse>(
+      return NextResponse.json<ApiErrorResponse>(
         { error: "媒体不存在" },
         { status: 404 }
       );
@@ -174,7 +174,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[DELETE /api/media/:id]", error);
-    return NextResponse.json<MediaErrorResponse>(
+    return NextResponse.json<ApiErrorResponse>(
       { error: "删除失败" },
       { status: 500 }
     );

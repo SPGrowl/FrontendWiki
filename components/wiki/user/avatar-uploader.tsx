@@ -7,6 +7,7 @@ import { UserAvatar } from "@/components/wiki/user/user-avatar";
 import { uploadMedia } from "@/lib/api/media";
 import { cn } from "@/lib/utils";
 
+
 interface AvatarUploaderProps {
   name: string;
   avatar: string;
@@ -14,18 +15,22 @@ interface AvatarUploaderProps {
 
 export function AvatarUploader({ name, avatar }: AvatarUploaderProps) {
   const router = useRouter();
+  // 触发文件上传的事件
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  // 是否正在上传
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const displayAvatar = preview ?? avatar;
 
+  // 提交文件
   async function handleFile(file: File | undefined) {
     if (!file || pending) return;
 
     setError(null);
     const objectUrl = URL.createObjectURL(file);
+    // 设置预览图
     setPreview(objectUrl);
     setPending(true);
 
@@ -37,6 +42,7 @@ export function AvatarUploader({ name, avatar }: AvatarUploaderProps) {
         setAsAvatar: true,
       });
       setPreview(null);
+      // 刷新页面，更新顶栏等位置的头像
       router.refresh();
     } catch (err) {
       setPreview(null);
@@ -44,6 +50,7 @@ export function AvatarUploader({ name, avatar }: AvatarUploaderProps) {
     } finally {
       setPending(false);
       URL.revokeObjectURL(objectUrl);
+      // 清空文件选择框
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -72,12 +79,15 @@ export function AvatarUploader({ name, avatar }: AvatarUploaderProps) {
             <CameraIcon className="size-6" weight="bold" aria-hidden />
           )}
         </button>
+        {/* 文件选择框 */}
+
         <input
           ref={inputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
           className="sr-only"
           disabled={pending}
+          // 文件列表变化时的回调
           onChange={(event) => {
             void handleFile(event.target.files?.[0]);
           }}

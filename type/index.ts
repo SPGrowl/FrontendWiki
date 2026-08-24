@@ -21,8 +21,13 @@ export type {
   EntryView,
 } from "@/type/entry";
 
+export type { ApiErrorResponse } from "@/type/api";
+
 export type {
   MediaPurpose,
-  MediaUploader,
   MediaAsset,
+  MediaListResult,
+  MediaAssetWithStorage,
+  UploadMediaInput,
+  UpdateMediaTitleBody,
 } from "@/type/media";

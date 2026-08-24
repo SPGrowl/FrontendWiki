@@ -1,6 +1,11 @@
 import { query } from "@/lib/db";
 import { isUuid } from "@/lib/wiki/entry-path";
-import type { MediaAsset, MediaPurpose } from "@/type/media";
+import type {
+  MediaAsset,
+  MediaAssetWithStorage,
+  MediaListResult,
+  MediaPurpose,
+} from "@/type/media";
 import {
   MEDIA_LIST_DEFAULT_LIMIT,
   MEDIA_LIST_MAX_LIMIT,
@@ -89,9 +94,7 @@ export async function createMediaAsset(
   return mapMedia(rows[0]);
 }
 
-export async function findMediaById(id: string): Promise<
-  (MediaAsset & { storageKey: string }) | null
-> {
+export async function findMediaById(id: string): Promise<MediaAssetWithStorage | null> {
   if (!isUuid(id)) return null;
 
   const { rows } = await query<MediaRow>(
@@ -119,7 +122,7 @@ export interface ListMediaOptions {
 
 export async function listMediaAssets(
   options: ListMediaOptions = {}
-): Promise<{ items: MediaAsset[]; nextOffset: number | null }> {
+): Promise<MediaListResult> {
   const purpose = options.purpose ?? "entry";
   const offset = Math.max(0, options.offset ?? 0);
   let limit = options.limit ?? MEDIA_LIST_DEFAULT_LIMIT;

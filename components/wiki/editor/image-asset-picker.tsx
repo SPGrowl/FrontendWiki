@@ -159,7 +159,7 @@ export function ImageAssetPicker({
     setUploading(true);
     setError(null);
     try {
-      const { asset } = await uploadMedia({
+      const asset = await uploadMedia({
         file: pendingFile,
         purpose: "entry",
         title: trimmed,

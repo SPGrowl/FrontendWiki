@@ -26,6 +26,7 @@ export function normalizeRequiredMediaTitle(value: unknown): string | null {
 }
 
 function sniffMime(bytes: Buffer): MediaAllowedMime | null {
+  // 读取文件的二进制字节，判断文件真实类型
   if (bytes.length < 12) return null;
 
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
@@ -93,7 +94,7 @@ export async function validateUploadFormData(
   if (!(file instanceof File)) {
     return { ok: false, error: "请使用 file 字段上传图片" };
   }
-
+// 检查文件大小与有效性
   const maxBytes = MEDIA_MAX_BYTES[purpose];
   if (file.size <= 0) {
     return { ok: false, error: "文件为空" };
@@ -107,6 +108,7 @@ export async function validateUploadFormData(
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  // 判断文件真实类型
   const sniffed = sniffMime(buffer);
   if (!sniffed || !MEDIA_ALLOWED_MIME.includes(sniffed)) {
     return {

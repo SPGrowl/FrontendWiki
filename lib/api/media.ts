@@ -1,12 +1,13 @@
+import type { ApiErrorResponse } from "@/type/api";
 import type {
-  MediaErrorResponse,
-  MediaListResponse,
-  MediaResponse,
-  MediaUploadResponse,
-  UpdateMediaRequest,
-} from "@/type/media-api";
+  MediaAsset,
+  MediaAssetPayload,
+  MediaListResult,
+  MediaPurpose,
+  UpdateMediaTitleBody,
+  UploadMediaInput,
+} from "@/type/media";
 import type { AuthResponse } from "@/type/user";
-import type { MediaPurpose } from "@/type/media";
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const data = (await response.json()) as T;
@@ -15,8 +16,8 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
       typeof data === "object" &&
       data !== null &&
       "error" in data &&
-      typeof (data as MediaErrorResponse).error === "string"
-        ? (data as MediaErrorResponse).error
+      typeof (data as ApiErrorResponse).error === "string"
+        ? (data as ApiErrorResponse).error
         : `请求失败 (${response.status})`;
     throw new Error(message);
   }
@@ -33,7 +34,7 @@ export interface ListMediaParams {
 
 export async function listMedia(
   params: ListMediaParams = {}
-): Promise<MediaListResponse> {
+): Promise<MediaListResult> {
   const search = new URLSearchParams();
   if (params.purpose) search.set("purpose", params.purpose);
   if (params.uploaderId) search.set("uploaderId", params.uploaderId);
@@ -43,20 +44,17 @@ export async function listMedia(
 
   const query = search.toString();
   const response = await fetch(`/api/media${query ? `?${query}` : ""}`);
-  return parseJsonResponse<MediaListResponse>(response);
+  return parseJsonResponse<MediaListResult>(response);
 }
 
-export async function uploadMedia(input: {
-  file: File;
-  purpose: MediaPurpose;
-  /** entry 必填；avatar 可选 */
-  title?: string;
-  setAsAvatar?: boolean;
-}): Promise<MediaUploadResponse> {
+export async function uploadMedia(
+  input: UploadMediaInput
+): Promise<MediaAsset> {
   if (input.purpose === "entry" && !input.title?.trim()) {
     throw new Error("上传配图时必须填写说明（message）");
   }
 
+  // 二进制传输文件
   const fd = new FormData();
   fd.append("file", input.file);
   fd.append("purpose", input.purpose);
@@ -67,19 +65,21 @@ export async function uploadMedia(input: {
     method: "POST",
     body: fd,
   });
-  return parseJsonResponse<MediaUploadResponse>(response);
+  const { asset } = await parseJsonResponse<MediaAssetPayload>(response);
+  return asset;
 }
 
 export async function updateMedia(
   id: string,
-  body: UpdateMediaRequest
-): Promise<MediaResponse> {
+  body: UpdateMediaTitleBody
+): Promise<MediaAsset> {
   const response = await fetch(`/api/media/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return parseJsonResponse<MediaResponse>(response);
+  const { asset } = await parseJsonResponse<MediaAssetPayload>(response);
+  return asset;
 }
 
 export async function deleteMedia(id: string): Promise<{ ok: true }> {

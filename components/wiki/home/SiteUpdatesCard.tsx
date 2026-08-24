@@ -11,6 +11,13 @@ interface SiteUpdateItem {
 /** 站点功能与约定变更（硬编码，非词条编辑记录） */
 const SITE_UPDATES: SiteUpdateItem[] = [
   {
+    date: "2026-08-24",
+    title: "图片缩放 hash 解析收紧",
+    detail:
+      "#scale 只能单独写 1～100；无效或多余 hash 会忽略，按默认展示宽度渲染。",
+    href: "/wiki/guidelines#images",
+  },
+  {
     date: "2026-08-16",
     title: "词条链接悬停预览",
     detail:

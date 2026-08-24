@@ -1,5 +1,6 @@
 const SANDBOX_SOURCE = "js-runner-sandbox";
 
+// 创建一个HtML沙盒，并嵌入代码
 export function buildSandboxHtml(code: string): string {
   const serializedCode = JSON.stringify(code);
 
@@ -12,9 +13,11 @@ export function buildSandboxHtml(code: string): string {
   var SOURCE = ${JSON.stringify(SANDBOX_SOURCE)};
   var logs = [];
   var finished = false;
+  // 定时器列表
   var pendingTimers = Object.create(null);
   var checkTimer = null;
 
+  // 将console的参数转化为能被postMessage 结构化克隆的。
   function serialize(value) {
     if (value === undefined) return { __type: "undefined" };
     if (value === null) return null;
@@ -36,17 +39,21 @@ export function buildSandboxHtml(code: string): string {
     }
   }
 
+  // 格式化参数列表
   function serializeArgs(args) {
     return Array.prototype.slice.call(args).map(serialize);
   }
 
+  // 发送日志
   function emitLog(entry) {
     logs.push(entry);
     parent.postMessage({ source: SOURCE, type: "log", entry: entry }, "*");
   }
 
+  // 根据字面量重写console的方法
   ["log", "warn", "error", "info"].forEach(function (method) {
     console[method] = function () {
+      // 发送日志
       emitLog({ type: method, args: serializeArgs(arguments) });
     };
   });
@@ -58,6 +65,7 @@ export function buildSandboxHtml(code: string): string {
       nativeClearTimeout(checkTimer);
       checkTimer = null;
     }
+      // 发送结束信号
     parent.postMessage(
       {
         source: SOURCE,
@@ -72,6 +80,7 @@ export function buildSandboxHtml(code: string): string {
     );
   }
 
+  // 保存原生定时器
   var nativeSetTimeout = setTimeout.bind(window);
   var nativeClearTimeout = clearTimeout.bind(window);
   var nativeSetInterval = setInterval.bind(window);
@@ -85,6 +94,7 @@ export function buildSandboxHtml(code: string): string {
     delete pendingTimers[id];
   }
 
+  // 检查是否有未完成的定时器
   function hasPendingTimers() {
     for (var key in pendingTimers) {
       if (Object.prototype.hasOwnProperty.call(pendingTimers, key)) {
@@ -96,6 +106,7 @@ export function buildSandboxHtml(code: string): string {
 
   function scheduleSettle(errorMessage) {
     if (finished) return;
+    // 清除定时器
     if (checkTimer !== null) nativeClearTimeout(checkTimer);
     checkTimer = nativeSetTimeout(function () {
       checkTimer = null;
@@ -186,12 +197,14 @@ export function buildSandboxHtml(code: string): string {
   });
 
   try {
+  // 获取代码字符串
     var userCode = ${serializedCode};
     // 间接 eval：全局作用域，顶层 this === window（非严格），与经典 <script> 一致
     (0, eval)(userCode);
     scheduleSettle();
-  } catch (err) {
-    finish({
+  }catch (err) {
+    // 捕获错误
+  finish({
       success: false,
       error: err instanceof Error ? err.message : String(err),
     });

@@ -217,6 +217,12 @@ export default function GuidelinesPage() {
               ）。省略时使用默认展示宽度（栏宽内有上限，不会撑满整栏）。
             </li>
             <li>
+              <code className="rounded bg-wiki-code-bg px-1 py-0.5 text-[0.8125rem]">
+                #scale
+              </code>{" "}
+              只能单独使用，且必须为 1～100；写错、越界或写了其它 hash 时，按未指定比例处理（默认展示宽度，不是图库插入的 75%）。
+            </li>
+            <li>
               方括号中的说明会显示为图下注释，也会作为检索用的配图说明；请写简洁、能看懂的描述。
             </li>
             <li>
