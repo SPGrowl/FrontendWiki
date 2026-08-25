@@ -19,7 +19,7 @@ export function SidebarGithub() {
       >
         <GithubLogoIcon className="size-4 shrink-0" weight="fill" aria-hidden />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-medium">Frontend Wiki</span>
+          <span className="block truncate text-xs font-medium">Frontend Atlas</span>
           <span className="block truncate text-[10px] text-sidebar-foreground/65">
             SPGrowl/FrontendWiki
           </span>

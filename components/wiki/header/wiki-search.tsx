@@ -196,7 +196,7 @@ export function WikiSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="搜索 Frontend Wiki"
+        aria-label="搜索 Frontend Atlas"
         className={cn(
           "inline-flex h-8 shrink-0 items-center gap-2.5 rounded-md px-1.5 text-sm text-muted-foreground/90",
           "transition-colors hover:bg-muted/50 hover:text-foreground",
@@ -213,7 +213,7 @@ export function WikiSearch() {
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="搜索 Frontend Wiki"
+        title="搜索 Frontend Atlas"
         description="按词条或博客名称搜索"
         className="overflow-hidden rounded-lg sm:max-w-xl"
         showCloseButton={false}

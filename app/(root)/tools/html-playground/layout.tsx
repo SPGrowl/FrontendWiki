@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "HTML Playground | Frontend Wiki",
+  title: "HTML Playground | Frontend Atlas",
   description:
     "在隔离沙盒中编辑完整 HTML，拖动预览宽度查看 CSS 媒体查询与原生 JS 效果。",
 };

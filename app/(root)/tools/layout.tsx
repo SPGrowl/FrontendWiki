@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "JS 运行器 | Frontend Wiki",
+  title: "JS 运行器 | Frontend Atlas",
   description:
     "在隔离沙盒中运行原生 JavaScript，查看 console 输出与返回值，适合前端八股刷题验证。",
 };

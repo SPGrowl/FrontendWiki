@@ -19,7 +19,7 @@ export function WikiLogo() {
         aria-hidden
       />
       <span className="hidden truncate text-sm font-semibold tracking-tight sm:inline">
-        Frontend Wiki
+        Frontend Atlas
       </span>
     </Link>
   );

@@ -36,7 +36,7 @@ export function LoginForm() {
   return (
     <AuthShell
       title="登录"
-      description="使用用户名和密码登录 Frontend Wiki"
+      description="使用用户名和密码登录 Frontend Atlas"
       footer={
         <>
           还没有账号？<AuthLink href="/auth/register">注册</AuthLink>

@@ -20,12 +20,11 @@ export async function MetaCard() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <WikiCard>
-        <div className="text-center font-semibold">Frontend Wiki</div>
+        <div className="text-center font-semibold">Frontend Atlas</div>
         <p className="mt-2 text-center text-sm leading-relaxed">
-          欢迎来到这个完全公开、可自由编辑的
-          <span className="wiki-link">wiki</span>
-          ，Frontend Wiki。这里致力于收集一切前端的实用知识。任何人都可以为 Wiki
-          作出贡献！
+          欢迎来到
+          <span className="wiki-link">Frontend Atlas</span>
+          ——一份可自由编辑的前端知识图鉴。这里致力于用树形词条收集实用的前端知识。任何人都可以作出贡献！
         </p>
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-3">
           <StatItem label="词条" value={stats.entryCount} />
@@ -37,7 +36,7 @@ export async function MetaCard() {
       <WikiCard padding="md">
         <h3 className="text-base font-bold">参与 Wiki</h3>
         <p className="mt-2 text-sm leading-relaxed text-foreground/80">
-          我们欢迎任何人为 Frontend Wiki 作出贡献。登录后即可编辑已发布词条或创建新词条。
+          我们欢迎任何人为 Frontend Atlas 作出贡献。登录后即可编辑已发布词条或创建新词条。
         </p>
         <div className="mt-4 flex gap-3">
           <Link href="/entry/new" className="wiki-btn-primary flex-1 text-center">

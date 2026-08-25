@@ -1,8 +1,12 @@
-# Frontend Wiki
+# Frontend Atlas
 
 > 这是一个还在**持续成长中**的个人项目，作者是一名忙着找实习、准大四的前端菜鸟 🐣。  
-> 开发周期比较仓促，也使用了大量AI进行具体实现，虽然我进行了设计和审查，代码里一定有不少写法不规范、设计前后不一致的地方，欢迎 issue 或 PR，**路过的大佬放过** 😋。  
+> 开发周期比较仓促，也使用了大量 AI 进行具体实现，虽然我进行了设计和审查，代码里一定有不少写法不规范、设计前后不一致的地方，欢迎 issue 或 PR，**路过的大佬放过** 😋。  
 > 项目会随着我的学习和工作经历不断迭代，后续会持续优化。
+
+**Frontend Atlas（前端图鉴）**：一份活的、可协作的前端知识地图——用树形词条把分散的前端知识点重新组织起来。
+
+仓库：[SPGrowl/FrontendWiki](https://github.com/SPGrowl/FrontendWiki)
 
 ---
 
@@ -155,7 +159,7 @@ lib/wiki/            # href / Markdown / 代码围栏
 lib/auth/            # 会话与权限
 lib/media/           # 上传校验与存储
 db/                  # schema.sql / init.sql / migrate-*.sql / seed.sql
-docs/                # 开发与复习文档
+docs/                # 开发与复习文档（本地私有，未进仓库）
 ```
 
 ---
