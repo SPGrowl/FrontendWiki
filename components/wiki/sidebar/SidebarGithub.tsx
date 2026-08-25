@@ -1,7 +1,7 @@
 import { ArrowSquareOutIcon, GithubLogoIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
-const REPO_URL = "https://github.com/SPGrowl/FrontendWiki";
+const REPO_URL = "https://github.com/SPGrowl/Frontend-Atlas";
 
 export function SidebarGithub() {
   return (
@@ -21,7 +21,7 @@ export function SidebarGithub() {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-medium">Frontend Atlas</span>
           <span className="block truncate text-[10px] text-sidebar-foreground/65">
-            SPGrowl/FrontendWiki
+            SPGrowl/Frontend-Atlas
           </span>
         </span>
         <ArrowSquareOutIcon

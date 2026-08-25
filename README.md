@@ -6,7 +6,7 @@
 
 **Frontend Atlas（前端图鉴）**：一份活的、可协作的前端知识地图——用树形词条把分散的前端知识点重新组织起来。
 
-仓库：[SPGrowl/FrontendWiki](https://github.com/SPGrowl/FrontendWiki)
+仓库：[SPGrowl/Frontend-Atlas](https://github.com/SPGrowl/Frontend-Atlas)
 
 ---
 
